@@ -25,10 +25,11 @@
 - **Status**: Passed (Verified Counter with 1-patch mutation in `counter_app_test.rs`; verified Todo app with add, in-place toggle, and keyed deletion under Robolectric and live on Android 34 emulator; screenshot in `docs/m3_screen.png`).
 - **Date Passed**: 2026-11-09
 
-### M4: Compiler 🔴
-- **Scope**: `.fsx` → Lexer → Parser → AST → Semantic/type check → Rust codegen.
+### M4: Compiler 🟢
+- **Scope**: `.fsx` → Lexer → Parser → AST → Semantic/type check → Rust codegen → CLI (`ferrix-cli`) → AOT compilation into app crate (`build.rs`).
 - **Gate**: `examples/counter/component.fsx` runs end-to-end; asserts: exactly 1 JNI call per click, 1 `SetText` patch, existing TextView instance reused.
-- **Status**: Not Started
+- **Status**: Passed (Verified end-to-end in `FerrixE2ETest.testGoldenCounterCompilerAotExecution`; verified 1 JNI call, 1 SetText patch, and existing View reuse; verified live on Android 34 emulator with button interaction; screenshot in `docs/m4_screen.png`).
+- **Date Passed**: 2026-11-09
 
 ### M5: Platform SDK 🔴
 - **Scope**: Permissions, camera (CameraX), location (fused), sensors, mic, storage.

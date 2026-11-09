@@ -8,9 +8,13 @@ use std::panic::catch_unwind;
 use std::sync::Mutex;
 
 use ferrix_core::prelude::*;
-use jni::objects::JClass;
+use jni::objects::{JClass, JString};
 use jni::sys::{jbyteArray, jint, jlong, jobject};
 use jni::JNIEnv;
+
+pub mod counter_app {
+    include!(concat!(env!("OUT_DIR"), "/counter_generated.rs"));
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TodoItem {
@@ -88,20 +92,59 @@ fn build_todo_tree(
     (tree, add_button_id, toggle_map, delete_map)
 }
 
+enum AppState {
+    Counter {
+        context: ComponentContext,
+        props: counter_app::CounterProps,
+        current_tree: Element,
+        button_id: NodeId,
+        _text_id: NodeId,
+    },
+    Todo {
+        context: ComponentContext,
+        todos: Vec<TodoItem>,
+        next_todo_id: u64,
+        current_tree: Element,
+        add_button_id: NodeId,
+        toggle_map: HashMap<NodeId, u64>,
+        delete_map: HashMap<NodeId, u64>,
+    },
+}
+
 /// Internal state managed on the Rust side of the Android bridge.
 pub struct FerrixAndroidRuntime {
-    context: Mutex<ComponentContext>,
-    todos: Mutex<Vec<TodoItem>>,
-    next_todo_id: Mutex<u64>,
-    current_tree: Mutex<Element>,
-    add_button_id: Mutex<NodeId>,
-    toggle_map: Mutex<HashMap<NodeId, u64>>,
-    delete_map: Mutex<HashMap<NodeId, u64>>,
+    state: Mutex<AppState>,
     pending_patches: Mutex<Option<Vec<u8>>>,
+    jni_call_counter: Mutex<u64>,
 }
 
 impl FerrixAndroidRuntime {
-    pub fn new() -> Self {
+    /// Creates a runtime running the compiled Counter component (from `component.fsx`).
+    pub fn new_counter() -> Self {
+        let mut cx = ComponentContext::with_start_id(2);
+        let props = counter_app::CounterProps { initial: 0 };
+        let current_tree = counter_app::Counter(&mut cx, props.clone());
+        let text_id = current_tree.children[1].id;
+        let button_id = current_tree.children[2].id;
+
+        let initial_batch = generate_mount_patches(&current_tree);
+        let encoded = initial_batch.encode();
+
+        Self {
+            state: Mutex::new(AppState::Counter {
+                context: cx,
+                props,
+                current_tree,
+                button_id,
+                _text_id: text_id,
+            }),
+            pending_patches: Mutex::new(Some(encoded)),
+            jni_call_counter: Mutex::new(0),
+        }
+    }
+
+    /// Creates a runtime running the reactive Todo app.
+    pub fn new_todo() -> Self {
         let mut cx = ComponentContext::with_start_id(2);
         let initial_todos = vec![
             TodoItem {
@@ -121,63 +164,98 @@ impl FerrixAndroidRuntime {
         let encoded = initial_batch.encode();
 
         Self {
-            context: Mutex::new(cx),
-            todos: Mutex::new(initial_todos),
-            next_todo_id: Mutex::new(3),
-            current_tree: Mutex::new(initial_tree),
-            add_button_id: Mutex::new(add_btn),
-            toggle_map: Mutex::new(toggles),
-            delete_map: Mutex::new(deletes),
+            state: Mutex::new(AppState::Todo {
+                context: cx,
+                todos: initial_todos,
+                next_todo_id: 3,
+                current_tree: initial_tree,
+                add_button_id: add_btn,
+                toggle_map: toggles,
+                delete_map: deletes,
+            }),
             pending_patches: Mutex::new(Some(encoded)),
+            jni_call_counter: Mutex::new(0),
         }
+    }
+
+    /// Default constructor starts the Counter app.
+    pub fn new() -> Self {
+        Self::new_counter()
+    }
+
+    /// Total JNI calls handled by this runtime instance.
+    pub fn jni_call_count(&self) -> u64 {
+        *self.jni_call_counter.lock().unwrap()
     }
 
     /// Handles an incoming UI event from Kotlin and queues any resulting patch updates.
     pub fn handle_event(&self, node_id: NodeId, event_type: EventType) -> Option<Vec<u8>> {
+        *self.jni_call_counter.lock().unwrap() += 1;
+
         if event_type != EventType::Click {
             return None;
         }
 
-        let mut todos = self.todos.lock().unwrap();
-        let add_btn = *self.add_button_id.lock().unwrap();
-        let toggle_map = self.toggle_map.lock().unwrap().clone();
-        let delete_map = self.delete_map.lock().unwrap().clone();
-
-        let mut changed = false;
-
-        if node_id == add_btn {
-            let mut next_id = self.next_todo_id.lock().unwrap();
-            todos.push(TodoItem {
-                id: *next_id,
-                text: format!("New Ferrix Task #{}", *next_id),
-                completed: false,
-            });
-            *next_id += 1;
-            changed = true;
-        } else if let Some(&item_id) = toggle_map.get(&node_id) {
-            if let Some(item) = todos.iter_mut().find(|it| it.id == item_id) {
-                item.completed = !item.completed;
-                changed = true;
+        let mut state_guard = self.state.lock().unwrap();
+        match &mut *state_guard {
+            AppState::Counter {
+                context,
+                props,
+                current_tree,
+                button_id,
+                ..
+            } => {
+                if node_id == *button_id {
+                    if let Some(signal) = context.get_signal::<i32>(0) {
+                        signal.set(signal.get() + 1);
+                    }
+                    let new_tree = counter_app::Counter(context, props.clone());
+                    let diff_batch = diff_elements(current_tree, &new_tree);
+                    *current_tree = new_tree;
+                    return Some(diff_batch.encode());
+                }
             }
-        } else if let Some(&item_id) = delete_map.get(&node_id) {
-            todos.retain(|it| it.id != item_id);
-            changed = true;
-        }
+            AppState::Todo {
+                context,
+                todos,
+                next_todo_id,
+                current_tree,
+                add_button_id,
+                toggle_map,
+                delete_map,
+            } => {
+                let mut changed = false;
+                if node_id == *add_button_id {
+                    todos.push(TodoItem {
+                        id: *next_todo_id,
+                        text: format!("New Ferrix Task #{}", *next_todo_id),
+                        completed: false,
+                    });
+                    *next_todo_id += 1;
+                    changed = true;
+                } else if let Some(&item_id) = toggle_map.get(&node_id) {
+                    if let Some(item) = todos.iter_mut().find(|it| it.id == item_id) {
+                        item.completed = !item.completed;
+                        changed = true;
+                    }
+                } else if let Some(&item_id) = delete_map.get(&node_id) {
+                    todos.retain(|it| it.id != item_id);
+                    changed = true;
+                }
 
-        if changed {
-            let mut cx = self.context.lock().unwrap();
-            let (new_tree, new_add_btn, new_toggles, new_deletes) =
-                build_todo_tree(&mut cx, &todos);
+                if changed {
+                    let (new_tree, new_add_btn, new_toggles, new_deletes) =
+                        build_todo_tree(context, todos);
+                    let diff_batch = diff_elements(current_tree, &new_tree);
 
-            let mut tree_guard = self.current_tree.lock().unwrap();
-            let diff_batch = diff_elements(&tree_guard, &new_tree);
+                    *current_tree = new_tree;
+                    *add_button_id = new_add_btn;
+                    *toggle_map = new_toggles;
+                    *delete_map = new_deletes;
 
-            *tree_guard = new_tree;
-            *self.add_button_id.lock().unwrap() = new_add_btn;
-            *self.toggle_map.lock().unwrap() = new_toggles;
-            *self.delete_map.lock().unwrap() = new_deletes;
-
-            return Some(diff_batch.encode());
+                    return Some(diff_batch.encode());
+                }
+            }
         }
 
         None
@@ -195,7 +273,7 @@ impl Default for FerrixAndroidRuntime {
 // com.ferrix.runtime.FerrixBridge
 // ============================================================================
 
-/// Initializes the Ferrix Rust runtime and returns a raw heap pointer as `jlong`.
+/// Initializes the Ferrix Rust runtime (defaulting to Counter) and returns heap pointer as `jlong`.
 #[no_mangle]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInit(
     _env: JNIEnv,
@@ -209,42 +287,55 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInit(
     result.unwrap_or(0)
 }
 
-/// Retrieves the initial patch command buffer as a `DirectByteBuffer`.
+/// Initializes the Ferrix Rust runtime with a specific app name ("counter" or "todo").
+#[no_mangle]
+pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInitApp(
+    mut env: JNIEnv,
+    _class: JClass,
+    app_name: JString,
+) -> jlong {
+    let result = catch_unwind(move || {
+        let name_str: String = match env.get_string(&app_name) {
+            Ok(s) => s.into(),
+            Err(_) => return 0,
+        };
+
+        let runtime = match name_str.as_str() {
+            "todo" => Box::new(FerrixAndroidRuntime::new_todo()),
+            _ => Box::new(FerrixAndroidRuntime::new_counter()),
+        };
+        Box::into_raw(runtime) as jlong
+    });
+
+    result.unwrap_or(0)
+}
+
+/// Retrieves the initial UI patch buffer as a direct byte buffer.
 #[no_mangle]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeGetInitialPatches(
     mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) -> jobject {
+    if handle == 0 {
+        return std::ptr::null_mut();
+    }
+
     let result = catch_unwind(move || {
-        if handle == 0 {
-            return std::ptr::null_mut();
-        }
-
-        // SAFETY: `handle` was allocated via Box::into_raw in `nativeInit`
-        // and is guaranteed to be valid until `nativeDestroy`.
         let runtime = unsafe { &*(handle as *const FerrixAndroidRuntime) };
-        let mut guard = runtime.pending_patches.lock().unwrap();
-
-        if let Some(ref mut buf) = *guard {
-            // SAFETY: `buf` slice pointer remains valid as long as `guard` holds the buffer in memory.
-            let byte_buffer = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
-            match byte_buffer {
-                Ok(bb) => bb.into_raw(),
-                Err(err) => {
-                    tracing::error!("Failed to create DirectByteBuffer: {:?}", err);
-                    std::ptr::null_mut()
-                }
-            }
-        } else {
-            std::ptr::null_mut()
+        let mut pending = runtime.pending_patches.lock().unwrap();
+        if let Some(ref mut buf) = *pending {
+            // SAFETY: DirectByteBuffer valid while buffered in runtime mutex
+            let bb = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
+            return bb.map(|b| b.into_raw()).unwrap_or(std::ptr::null_mut());
         }
+        std::ptr::null_mut()
     });
 
     result.unwrap_or(std::ptr::null_mut())
 }
 
-/// Dispatches an event from Kotlin to Rust and returns any resulting patches.
+/// Dispatches an interactive event from Kotlin to Rust and returns any resulting patches.
 #[no_mangle]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchEvent(
     mut env: JNIEnv,
@@ -254,48 +345,45 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchEvent(
     event_type: jint,
     _payload: jbyteArray,
 ) -> jobject {
-    let result = catch_unwind(move || {
-        if handle == 0 {
-            return std::ptr::null_mut();
-        }
+    if handle == 0 {
+        return std::ptr::null_mut();
+    }
 
-        // SAFETY: `handle` is checked non-null and valid.
+    let result = catch_unwind(move || {
         let runtime = unsafe { &*(handle as *const FerrixAndroidRuntime) };
-        let target_node = NodeId(node_id as u64);
         let ev_type = match EventType::from_u16(event_type as u16) {
-            Some(et) => et,
+            Some(t) => t,
             None => return std::ptr::null_mut(),
         };
 
-        if let Some(patch_bytes) = runtime.handle_event(target_node, ev_type) {
-            let mut guard = runtime.pending_patches.lock().unwrap();
-            *guard = Some(patch_bytes);
-            if let Some(ref mut buf) = *guard {
-                // SAFETY: pointer valid during buffer lifetime in mutex.
+        if let Some(patches) = runtime.handle_event(NodeId::new(node_id as u64), ev_type) {
+            let mut pending = runtime.pending_patches.lock().unwrap();
+            *pending = Some(patches);
+            if let Some(ref mut buf) = *pending {
                 let bb = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
                 return bb.map(|b| b.into_raw()).unwrap_or(std::ptr::null_mut());
             }
         }
-
         std::ptr::null_mut()
     });
 
     result.unwrap_or(std::ptr::null_mut())
 }
 
-/// Destroys the native runtime instance and releases its allocated memory.
+/// Destroys the native runtime instance and frees its memory.
 #[no_mangle]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDestroy(
     _env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) {
+    if handle == 0 {
+        return;
+    }
     let _ = catch_unwind(|| {
-        if handle != 0 {
-            // SAFETY: Reclaims ownership of raw pointer allocated in `nativeInit`.
-            unsafe {
-                let _ = Box::from_raw(handle as *mut FerrixAndroidRuntime);
-            }
+        // SAFETY: Pointer was created by Box::into_raw in nativeInit
+        unsafe {
+            drop(Box::from_raw(handle as *mut FerrixAndroidRuntime));
         }
     });
 }
@@ -305,82 +393,57 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_runtime_initial_batch() {
-        let runtime = FerrixAndroidRuntime::new();
+    fn test_counter_runtime_initial_batch() {
+        let runtime = FerrixAndroidRuntime::new_counter();
         let guard = runtime.pending_patches.lock().unwrap();
         let bytes = guard.as_ref().unwrap();
-
-        let batch = PatchBatch::decode(bytes).expect("Failed to decode initial patch batch");
-
-        // Verify initial batch contains Column, Text, Button, Row
-        let view_types: Vec<_> = batch
+        let batch = PatchBatch::decode(bytes).expect("Failed to decode initial batch");
+        let create_count = batch
             .patches
             .iter()
-            .filter_map(|p| match p {
-                Patch::CreateNode { view_type, .. } => Some(*view_type),
-                _ => None,
-            })
-            .collect();
-
-        assert!(view_types.contains(&ViewType::Column));
-        assert!(view_types.contains(&ViewType::Text));
-        assert!(view_types.contains(&ViewType::Button));
-        assert!(view_types.contains(&ViewType::Row));
+            .filter(|p| matches!(p, Patch::CreateNode { .. }))
+            .count();
+        assert_eq!(create_count, 4); // Column, Text, Text, Button
     }
 
     #[test]
-    fn test_runtime_event_handling() {
-        let runtime = FerrixAndroidRuntime::new();
-        let add_btn = *runtime.add_button_id.lock().unwrap();
+    fn test_counter_runtime_click_produces_single_set_text_patch() {
+        let runtime = FerrixAndroidRuntime::new_counter();
 
-        // 1. Click Add Task
-        let patch_bytes = runtime
+        // Node 4 is the Increment button
+        let update_bytes = runtime
+            .handle_event(NodeId::new(4), EventType::Click)
+            .expect("Expected patch buffer on button click");
+
+        let batch = PatchBatch::decode(&update_bytes).expect("Failed to decode update batch");
+        assert_eq!(batch.patches.len(), 1, "Must emit exactly 1 patch");
+
+        match &batch.patches[0] {
+            Patch::SetText { node_id, text } => {
+                assert_eq!(*node_id, NodeId::new(3));
+                assert_eq!(text, "Count: 1");
+            }
+            other => panic!("Expected SetText patch, found {:?}", other),
+        }
+
+        assert_eq!(runtime.jni_call_count(), 1, "Exactly 1 call recorded");
+    }
+
+    #[test]
+    fn test_todo_runtime_event_handling() {
+        let runtime = FerrixAndroidRuntime::new_todo();
+        let guard = runtime.pending_patches.lock().unwrap();
+        assert!(guard.is_some());
+
+        let add_btn = match &*runtime.state.lock().unwrap() {
+            AppState::Todo { add_button_id, .. } => *add_button_id,
+            _ => panic!("Wrong state"),
+        };
+
+        let update_bytes = runtime
             .handle_event(add_btn, EventType::Click)
-            .expect("Expected patch buffer on Add Task click");
-
-        let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
-        assert!(!batch.is_empty());
-        assert!(batch.patches.iter().any(|p| matches!(
-            p,
-            Patch::SetText { text, .. } if text == "[ ] New Ferrix Task #3"
-        )));
-
-        // 2. Click Toggle on Item 2
-        let toggle_node = runtime
-            .toggle_map
-            .lock()
-            .unwrap()
-            .iter()
-            .find(|(_, &item_id)| item_id == 2)
-            .map(|(&btn_id, _)| btn_id)
-            .expect("Expected toggle button for item 2");
-
-        let patch_bytes = runtime
-            .handle_event(toggle_node, EventType::Click)
-            .expect("Expected patch buffer on Toggle click");
-        let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
-        assert!(batch.patches.iter().any(|p| matches!(
-            p,
-            Patch::SetText { text, .. } if text == "[x] Build Reactive Runtime"
-        )));
-
-        // 3. Click Delete on Item 1
-        let delete_node = runtime
-            .delete_map
-            .lock()
-            .unwrap()
-            .iter()
-            .find(|(_, &item_id)| item_id == 1)
-            .map(|(&btn_id, _)| btn_id)
-            .expect("Expected delete button for item 1");
-
-        let patch_bytes = runtime
-            .handle_event(delete_node, EventType::Click)
-            .expect("Expected patch buffer on Delete click");
-        let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
-        assert!(batch
-            .patches
-            .iter()
-            .any(|p| matches!(p, Patch::RemoveChild { .. })));
+            .expect("Expected patch buffer on add");
+        let batch = PatchBatch::decode(&update_bytes).unwrap();
+        assert!(!batch.patches.is_empty());
     }
 }

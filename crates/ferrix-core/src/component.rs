@@ -82,6 +82,13 @@ impl ComponentContext {
         self.allocator.reset(self.start_id);
     }
 
+    /// Retrieves a persistent Signal stored at hook index `index`.
+    pub fn get_signal<T: Clone + 'static>(&self, index: usize) -> Option<Signal<T>> {
+        self.hooks
+            .get(index)
+            .and_then(|slot| slot.downcast_ref::<Signal<T>>().cloned())
+    }
+
     /// Hook: `useState<T>`
     /// Provides persistent reactive state across renders.
     pub fn use_state<T: Clone + 'static>(&mut self, initial: T) -> State<T> {

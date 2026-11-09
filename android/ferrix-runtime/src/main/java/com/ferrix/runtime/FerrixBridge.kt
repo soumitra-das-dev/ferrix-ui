@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.ViewGroup
 import com.ferrix.runtime.protocol.CommandDecoder
 import com.ferrix.runtime.protocol.EventType
+import com.ferrix.runtime.protocol.Patch
 import java.nio.ByteBuffer
 
 /**
@@ -15,6 +16,18 @@ class FerrixBridge {
     private var nativeHandle: Long = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
     private var renderer: FerrixRenderer? = null
+
+    /**
+     * Counter for JNI calls made during event dispatches.
+     */
+    var jniCallCount: Int = 0
+        private set
+
+    /**
+     * Last batch of patches received from a JNI event dispatch.
+     */
+    var lastEmittedPatches: List<Patch> = emptyList()
+        private set
 
     companion object {
         init {
@@ -29,9 +42,13 @@ class FerrixBridge {
     /**
      * Initializes the Rust runtime and mounts the UI into [rootContainer].
      */
-    fun start(context: Context, rootContainer: ViewGroup): FerrixRenderer {
-        nativeHandle = nativeInit()
-        check(nativeHandle != 0L) { "Failed to initialize native Ferrix runtime" }
+    fun start(context: Context, rootContainer: ViewGroup, appName: String = "counter"): FerrixRenderer {
+        nativeHandle = if (appName == "counter") {
+            nativeInit()
+        } else {
+            nativeInitApp(appName)
+        }
+        check(nativeHandle != 0L) { "Failed to initialize native Ferrix runtime for $appName" }
 
         val activeRenderer = FerrixRenderer(context, rootContainer)
         renderer = activeRenderer
@@ -54,6 +71,8 @@ class FerrixBridge {
     fun dispatchEvent(nodeId: Long, eventType: EventType, payload: ByteArray?) {
         if (nativeHandle == 0L) return
 
+        jniCallCount++
+
         val responseBuffer = nativeDispatchEvent(
             nativeHandle,
             nodeId,
@@ -63,6 +82,7 @@ class FerrixBridge {
 
         if (responseBuffer != null) {
             val patches = CommandDecoder.decode(responseBuffer)
+            lastEmittedPatches = patches
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 renderer?.applyPatches(patches) { id, type, data ->
                     dispatchEvent(id, type, data)
@@ -74,6 +94,8 @@ class FerrixBridge {
                     }
                 }
             }
+        } else {
+            lastEmittedPatches = emptyList()
         }
     }
 
@@ -90,6 +112,7 @@ class FerrixBridge {
 
     // Native JNI functions implemented in crates/ferrix-android
     private external fun nativeInit(): Long
+    private external fun nativeInitApp(appName: String): Long
     private external fun nativeGetInitialPatches(handle: Long): ByteBuffer?
     private external fun nativeDispatchEvent(
         handle: Long,

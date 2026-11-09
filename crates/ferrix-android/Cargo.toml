@@ -13,3 +13,6 @@ ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
 ferrix-core = { path = "../ferrix-core" }
 jni = { workspace = true }
 tracing = { workspace = true }
+
+[build-dependencies]
+ferrix-compiler = { path = "../ferrix-compiler" }
