@@ -147,6 +147,24 @@ class FerrixBridge {
     }
 
     /**
+     * Serializes application state for state restoration across process death or config change.
+     */
+    fun saveState(): ByteArray? {
+        if (nativeHandle == 0L) return null
+        return nativeSaveState(nativeHandle)
+    }
+
+    /**
+     * Restores application state from a serialized snapshot.
+     */
+    fun restoreState(savedState: ByteArray): Boolean {
+        if (nativeHandle == 0L) return false
+        val patchBuffer = nativeRestoreState(nativeHandle, savedState) ?: return false
+        applyPatchBuffer(patchBuffer)
+        return true
+    }
+
+    /**
      * Tears down the native Rust runtime and releases hardware resources.
      */
     fun destroy() {
@@ -172,5 +190,7 @@ class FerrixBridge {
         eventType: Int,
         payload: ByteArray?
     ): ByteBuffer?
+    private external fun nativeSaveState(handle: Long): ByteArray?
+    private external fun nativeRestoreState(handle: Long, savedState: ByteArray): ByteBuffer?
     private external fun nativeDestroy(handle: Long)
 }

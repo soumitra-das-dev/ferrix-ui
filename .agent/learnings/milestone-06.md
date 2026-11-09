@@ -38,3 +38,4 @@
   - Captured live UI hierarchy: "Ferrix Store (M6 API App)" with product list and images.
   - Interacted with Like button: triggered `use_mutation`, increased likes from 12 to 13, changed button state to "❤️ LIKED", and triggered native `AnimateScale` card pulse (measured bounds expanded from `[20,144][300,313]` to `[13,140][307,317]`).
   - Saved screenshot to `docs/m6_screen.png`.
+

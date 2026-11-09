@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -106,7 +107,12 @@ class FerrixRenderer(
                 is Patch.SetText -> {
                     val view = nodes.get(patch.nodeId)
                     if (view is TextView) {
-                        view.text = patch.text
+                        if (view.text.toString() != patch.text) {
+                            val prevTag = view.tag
+                            view.tag = "PROGRAMMATIC_UPDATE"
+                            view.text = patch.text
+                            view.tag = prevTag
+                        }
                     }
                 }
                 is Patch.SetLayout -> {
@@ -183,6 +189,14 @@ class FerrixRenderer(
                         is Property.AnimateTranslationY -> {
                             view.animate().translationY(prop.target).setDuration(prop.durationMs).start()
                         }
+                        is Property.ContentDescription -> view.contentDescription = prop.description
+                        is Property.AccessibilityRole -> view.tag = prop.role
+                        is Property.AccessibilityHeading -> {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                                view.isAccessibilityHeading = prop.isHeading
+                            }
+                        }
+                        is Property.Hint -> (view as? EditText)?.hint = prop.hint
                     }
                 }
                 is Patch.SetVisibility -> {
@@ -199,6 +213,19 @@ class FerrixRenderer(
                         EventType.CLICK -> {
                             view.setOnClickListener {
                                 eventDispatcher(patch.nodeId, EventType.CLICK, null)
+                            }
+                        }
+                        EventType.TEXT_CHANGED -> {
+                            if (view is EditText) {
+                                view.addTextChangedListener(object : android.text.TextWatcher {
+                                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                                        if (view.tag == "PROGRAMMATIC_UPDATE") return
+                                        val textBytes = (s?.toString() ?: "").toByteArray(java.nio.charset.StandardCharsets.UTF_8)
+                                        eventDispatcher(patch.nodeId, EventType.TEXT_CHANGED, textBytes)
+                                    }
+                                    override fun afterTextChanged(s: android.text.Editable?) {}
+                                })
                             }
                         }
                         else -> {

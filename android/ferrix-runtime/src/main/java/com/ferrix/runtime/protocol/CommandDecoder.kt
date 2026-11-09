@@ -133,6 +133,22 @@ object CommandDecoder {
                             val durationMs = buf.int.toLong() and 0xFFFFFFFFL
                             Property.AnimateTranslationY(target, durationMs)
                         }
+                        12 -> {
+                            val strBytes = ByteArray(valLen)
+                            buf.get(strBytes)
+                            Property.ContentDescription(String(strBytes, StandardCharsets.UTF_8))
+                        }
+                        13 -> {
+                            val strBytes = ByteArray(valLen)
+                            buf.get(strBytes)
+                            Property.AccessibilityRole(String(strBytes, StandardCharsets.UTF_8))
+                        }
+                        14 -> Property.AccessibilityHeading(buf.get() != 0.toByte())
+                        15 -> {
+                            val strBytes = ByteArray(valLen)
+                            buf.get(strBytes)
+                            Property.Hint(String(strBytes, StandardCharsets.UTF_8))
+                        }
                         else -> {
                             // Skip unknown property bytes
                             buf.position(buf.position() + valLen)

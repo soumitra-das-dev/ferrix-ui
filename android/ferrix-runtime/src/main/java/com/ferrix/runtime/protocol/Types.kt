@@ -65,4 +65,8 @@ sealed class Property {
     data class AnimateAlpha(val target: Float, val durationMs: Long) : Property()
     data class AnimateScale(val target: Float, val durationMs: Long) : Property()
     data class AnimateTranslationY(val target: Float, val durationMs: Long) : Property()
+    data class ContentDescription(val description: String) : Property()
+    data class AccessibilityRole(val role: String) : Property()
+    data class AccessibilityHeading(val isHeading: Boolean) : Property()
+    data class Hint(val hint: String) : Property()
 }

@@ -19,7 +19,7 @@ pub mod counter_app {
     include!(concat!(env!("OUT_DIR"), "/counter_generated.rs"));
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TodoItem {
     pub id: u64,
     pub text: String,
@@ -274,6 +274,61 @@ pub fn build_api_tree(
     (root, like_buttons)
 }
 
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct ProductionStateData {
+    pub text_value: String,
+    pub counter: i32,
+}
+
+pub fn build_production_tree(
+    cx: &mut ComponentContext,
+    text_value: &str,
+    counter: i32,
+) -> (Element, NodeId, NodeId) {
+    cx.prepare_render();
+
+    let root = Column::new()
+        .padding(20.0)
+        .spacing(16.0)
+        .background_color(0xFF0F172A)
+        .child(
+            Text::new("Ferrix Production Showcase (M7)")
+                .size(24.0)
+                .color(0xFFF8FAFC)
+                .accessibility_heading(true)
+                .content_description("Ferrix Production Showcase heading"),
+        )
+        .child(
+            Image::new("https://ferrix.dev/img/logo.png")
+                .content_description("Ferrix framework architecture logo"),
+        )
+        .child(
+            TextInput::new()
+                .hint("Type here to test native IME...")
+                .text(text_value)
+                .size(16.0)
+                .text_color(0xFFFFFFFF)
+                .content_description("Interactive text input field"),
+        )
+        .child(
+            Text::new(format!("Echo: {}", text_value))
+                .size(16.0)
+                .color(0xFF38BDF8),
+        )
+        .child(
+            Button::new(format!("Counter: {}", counter))
+                .background_color(0xFF3B82F6)
+                .text_color(0xFFFFFFFF)
+                .content_description("Production counter button"),
+        )
+        .build_with_id(NodeId::new(1), cx.allocator());
+
+    let text_input_id = root.children[2].id;
+    let button_id = root.children[4].id;
+
+    (root, text_input_id, button_id)
+}
+
 enum AppState {
     Counter {
         context: ComponentContext,
@@ -309,6 +364,13 @@ enum AppState {
         current_tree: Element,
         like_buttons: HashMap<NodeId, u64>,
         last_liked_id: Option<u64>,
+    },
+    Production {
+        context: ComponentContext,
+        data: ProductionStateData,
+        current_tree: Element,
+        text_input_id: NodeId,
+        button_id: NodeId,
     },
 }
 
@@ -461,6 +523,113 @@ impl FerrixAndroidRuntime {
         }
     }
 
+    /// Creates a runtime running the Production showcase app.
+    pub fn new_production() -> Self {
+        let mut cx = ComponentContext::with_start_id(2);
+        let data = ProductionStateData {
+            text_value: "Hello Ferrix".to_string(),
+            counter: 0,
+        };
+        let (initial_tree, input_id, btn_id) =
+            build_production_tree(&mut cx, &data.text_value, data.counter);
+        let initial_batch = generate_mount_patches(&initial_tree);
+        let encoded = initial_batch.encode();
+
+        Self {
+            state: Mutex::new(AppState::Production {
+                context: cx,
+                data,
+                current_tree: initial_tree,
+                text_input_id: input_id,
+                button_id: btn_id,
+            }),
+            pending_patches: Mutex::new(Some(encoded)),
+            pending_platform_requests: Mutex::new(None),
+            jni_call_counter: Mutex::new(0),
+        }
+    }
+
+    /// Serializes current state to JSON bytes for state restoration.
+    pub fn save_state(&self) -> Vec<u8> {
+        let state_guard = self.state.lock().unwrap();
+        match &*state_guard {
+            AppState::Production { data, .. } => serde_json::to_vec(data).unwrap_or_default(),
+            AppState::Todo { todos, .. } => serde_json::to_vec(todos).unwrap_or_default(),
+            AppState::Counter { context, .. } => {
+                let count = context.get_signal::<i32>(0).map(|s| s.get()).unwrap_or(0);
+                serde_json::to_vec(&count).unwrap_or_default()
+            }
+            AppState::Api { .. } => Vec::new(),
+            AppState::Platform { .. } => Vec::new(),
+        }
+    }
+
+    /// Restores state from serialized JSON bytes and returns patch buffer.
+    pub fn restore_state(&self, bytes: &[u8]) -> Option<Vec<u8>> {
+        let mut state_guard = self.state.lock().unwrap();
+        match &mut *state_guard {
+            AppState::Production {
+                context,
+                data,
+                current_tree,
+                text_input_id,
+                button_id,
+            } => {
+                if let Ok(new_data) = serde_json::from_slice::<ProductionStateData>(bytes) {
+                    *data = new_data;
+                    let (new_tree, new_input, new_btn) =
+                        build_production_tree(context, &data.text_value, data.counter);
+                    let diff_batch = diff_elements(current_tree, &new_tree);
+                    *current_tree = new_tree;
+                    *text_input_id = new_input;
+                    *button_id = new_btn;
+                    return Some(diff_batch.encode());
+                }
+            }
+            AppState::Todo {
+                context,
+                todos,
+                next_todo_id,
+                current_tree,
+                add_button_id,
+                toggle_map,
+                delete_map,
+            } => {
+                if let Ok(new_todos) = serde_json::from_slice::<Vec<TodoItem>>(bytes) {
+                    *next_todo_id = new_todos.iter().map(|t| t.id).max().unwrap_or(0) + 1;
+                    *todos = new_todos;
+                    let (new_tree, new_add, new_toggles, new_deletes) =
+                        build_todo_tree(context, todos);
+                    let diff_batch = diff_elements(current_tree, &new_tree);
+                    *current_tree = new_tree;
+                    *add_button_id = new_add;
+                    *toggle_map = new_toggles;
+                    *delete_map = new_deletes;
+                    return Some(diff_batch.encode());
+                }
+            }
+            AppState::Counter {
+                context,
+                props,
+                current_tree,
+                button_id: _,
+                _text_id: _,
+            } => {
+                if let Ok(count) = serde_json::from_slice::<i32>(bytes) {
+                    if let Some(signal) = context.get_signal::<i32>(0) {
+                        signal.set(count);
+                    }
+                    let new_tree = counter_app::Counter(context, props.clone());
+                    let diff_batch = diff_elements(current_tree, &new_tree);
+                    *current_tree = new_tree;
+                    return Some(diff_batch.encode());
+                }
+            }
+            _ => {}
+        }
+        None
+    }
+
     /// Default constructor starts the Counter app.
     pub fn new() -> Self {
         Self::new_counter()
@@ -518,14 +687,49 @@ impl FerrixAndroidRuntime {
 
     /// Handles an incoming UI event from Kotlin and queues any resulting patch updates.
     pub fn handle_event(&self, node_id: NodeId, event_type: EventType) -> Option<Vec<u8>> {
-        *self.jni_call_counter.lock().unwrap() += 1;
+        self.handle_event_with_payload(node_id, event_type, &[])
+    }
 
-        if event_type != EventType::Click {
-            return None;
-        }
+    /// Handles an incoming UI event with arbitrary binary payload (e.g. TextChanged).
+    pub fn handle_event_with_payload(
+        &self,
+        node_id: NodeId,
+        event_type: EventType,
+        payload: &[u8],
+    ) -> Option<Vec<u8>> {
+        *self.jni_call_counter.lock().unwrap() += 1;
 
         let mut state_guard = self.state.lock().unwrap();
         match &mut *state_guard {
+            AppState::Production {
+                context,
+                data,
+                current_tree,
+                text_input_id,
+                button_id,
+            } => {
+                if event_type == EventType::TextChanged && node_id == *text_input_id {
+                    if let Ok(text) = std::str::from_utf8(payload) {
+                        data.text_value = text.to_string();
+                        let (new_tree, new_input, new_btn) =
+                            build_production_tree(context, &data.text_value, data.counter);
+                        let diff_batch = diff_elements(current_tree, &new_tree);
+                        *current_tree = new_tree;
+                        *text_input_id = new_input;
+                        *button_id = new_btn;
+                        return Some(diff_batch.encode());
+                    }
+                } else if event_type == EventType::Click && node_id == *button_id {
+                    data.counter += 1;
+                    let (new_tree, new_input, new_btn) =
+                        build_production_tree(context, &data.text_value, data.counter);
+                    let diff_batch = diff_elements(current_tree, &new_tree);
+                    *current_tree = new_tree;
+                    *text_input_id = new_input;
+                    *button_id = new_btn;
+                    return Some(diff_batch.encode());
+                }
+            }
             AppState::Counter {
                 context,
                 props,
@@ -533,7 +737,7 @@ impl FerrixAndroidRuntime {
                 button_id,
                 ..
             } => {
-                if node_id == *button_id {
+                if event_type == EventType::Click && node_id == *button_id {
                     if let Some(signal) = context.get_signal::<i32>(0) {
                         signal.set(signal.get() + 1);
                     }
@@ -552,6 +756,9 @@ impl FerrixAndroidRuntime {
                 toggle_map,
                 delete_map,
             } => {
+                if event_type != EventType::Click {
+                    return None;
+                }
                 let mut changed = false;
                 if node_id == *add_button_id {
                     todos.push(TodoItem {
@@ -591,6 +798,9 @@ impl FerrixAndroidRuntime {
                 cam_btn,
                 ..
             } => {
+                if event_type != EventType::Click {
+                    return None;
+                }
                 if node_id == *perm_btn {
                     outbox.push(PlatformRequest::RequestPermission {
                         request_id: 1,
@@ -615,6 +825,9 @@ impl FerrixAndroidRuntime {
                 like_buttons,
                 last_liked_id,
             } => {
+                if event_type != EventType::Click {
+                    return None;
+                }
                 if let Some(&product_id) = like_buttons.get(&node_id) {
                     (mutation_handle.mutate)(product_id);
                     *last_liked_id = Some(product_id);
@@ -677,6 +890,7 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInitApp(
             "todo" => Box::new(FerrixAndroidRuntime::new_todo()),
             "platform" => Box::new(FerrixAndroidRuntime::new_platform()),
             "api" => Box::new(FerrixAndroidRuntime::new_api()),
+            "production" => Box::new(FerrixAndroidRuntime::new_production()),
             _ => Box::new(FerrixAndroidRuntime::new_counter()),
         };
         Box::into_raw(runtime) as jlong
@@ -774,13 +988,14 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeGetInitialPatc
 
 /// Dispatches an interactive event from Kotlin to Rust and returns any resulting patches.
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchEvent(
     mut env: JNIEnv,
     _class: JClass,
     handle: jlong,
     node_id: jlong,
     event_type: jint,
-    _payload: jbyteArray,
+    payload: jbyteArray,
 ) -> jobject {
     if handle == 0 {
         return std::ptr::null_mut();
@@ -793,7 +1008,75 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchEvent(
             None => return std::ptr::null_mut(),
         };
 
-        if let Some(patches) = runtime.handle_event(NodeId::new(node_id as u64), ev_type) {
+        let payload_vec = if !payload.is_null() {
+            let j_arr = unsafe { JByteArray::from_raw(payload) };
+            env.convert_byte_array(&j_arr).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+
+        if let Some(patches) =
+            runtime.handle_event_with_payload(NodeId::new(node_id as u64), ev_type, &payload_vec)
+        {
+            let mut pending = runtime.pending_patches.lock().unwrap();
+            *pending = Some(patches);
+            if let Some(ref mut buf) = *pending {
+                let bb = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
+                return bb.map(|b| b.into_raw()).unwrap_or(std::ptr::null_mut());
+            }
+        }
+        std::ptr::null_mut()
+    });
+
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+/// Serializes application state to a byte array for state restoration across process death.
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeSaveState(
+    env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) -> jbyteArray {
+    if handle == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let result = catch_unwind(|| {
+        let runtime = unsafe { &*(handle as *const FerrixAndroidRuntime) };
+        let state_bytes = runtime.save_state();
+        env.byte_array_from_slice(&state_bytes)
+            .ok()
+            .map(|b| b.into_raw())
+            .unwrap_or(std::ptr::null_mut())
+    });
+
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+/// Restores application state from a serialized snapshot and returns resulting patch buffer.
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeRestoreState(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    saved_state: jbyteArray,
+) -> jobject {
+    if handle == 0 || saved_state.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let result = catch_unwind(move || {
+        let runtime = unsafe { &*(handle as *const FerrixAndroidRuntime) };
+        let j_arr = unsafe { JByteArray::from_raw(saved_state) };
+        let bytes = match env.convert_byte_array(&j_arr) {
+            Ok(b) => b,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        if let Some(patches) = runtime.restore_state(&bytes) {
             let mut pending = runtime.pending_patches.lock().unwrap();
             *pending = Some(patches);
             if let Some(ref mut buf) = *pending {
@@ -827,6 +1110,7 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDestroy(
                 AppState::Todo { context, .. } => context.unmount(),
                 AppState::Platform { context, .. } => context.unmount(),
                 AppState::Api { context, .. } => context.unmount(),
+                AppState::Production { context, .. } => context.unmount(),
             }
         }
     });
@@ -1049,5 +1333,74 @@ mod tests {
             p,
             Patch::SetText { text, .. } if text.contains("12 Likes")
         )));
+    }
+
+    #[test]
+    fn test_production_runtime_accessibility_text_input_and_state_restoration() {
+        let runtime = FerrixAndroidRuntime::new_production();
+        let init_buf = runtime.pending_patches.lock().unwrap().clone().unwrap();
+        let init_batch = PatchBatch::decode(&init_buf).unwrap();
+
+        // 1. Accessibility verification:
+        assert!(init_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetProperty {
+                property: Property::AccessibilityHeading(true),
+                ..
+            }
+        )));
+        assert!(init_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetProperty {
+                property: Property::ContentDescription(desc),
+                ..
+            } if desc.contains("Production Showcase")
+        )));
+
+        // 2. Text Input & IME verification:
+        let (input_id, btn_id) = match &*runtime.state.lock().unwrap() {
+            AppState::Production {
+                text_input_id,
+                button_id,
+                ..
+            } => (*text_input_id, *button_id),
+            _ => panic!("Expected AppState::Production"),
+        };
+
+        let input_bytes = runtime
+            .handle_event_with_payload(input_id, EventType::TextChanged, b"Production Ready Ferrix")
+            .expect("Expected UI patch on text input");
+        let input_batch = PatchBatch::decode(&input_bytes).unwrap();
+        assert!(input_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text == "Echo: Production Ready Ferrix"
+        )));
+
+        // 3. Counter button interaction:
+        let click_bytes = runtime
+            .handle_event(btn_id, EventType::Click)
+            .expect("Expected UI patch on counter click");
+        let click_batch = PatchBatch::decode(&click_bytes).unwrap();
+        assert!(click_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text == "Counter: 1"
+        )));
+
+        // 4. State save and restoration:
+        let snapshot = runtime.save_state();
+        assert!(!snapshot.is_empty());
+
+        let fresh_runtime = FerrixAndroidRuntime::new_production();
+        let restored = fresh_runtime.restore_state(&snapshot);
+        assert!(restored.is_some(), "State restoration must succeed");
+
+        let restored_state = fresh_runtime.state.lock().unwrap();
+        match &*restored_state {
+            AppState::Production { data, .. } => {
+                assert_eq!(data.text_value, "Production Ready Ferrix");
+                assert_eq!(data.counter, 1);
+            }
+            _ => panic!("Expected AppState::Production"),
+        }
     }
 }

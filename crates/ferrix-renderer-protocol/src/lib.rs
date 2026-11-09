@@ -108,6 +108,10 @@ pub enum Property {
         target: f32,
         duration_ms: u32,
     },
+    ContentDescription(String),
+    AccessibilityRole(String),
+    AccessibilityHeading(bool),
+    Hint(String),
 }
 
 impl Property {
@@ -124,6 +128,10 @@ impl Property {
             Self::AnimateAlpha { .. } => 9,
             Self::AnimateScale { .. } => 10,
             Self::AnimateTranslationY { .. } => 11,
+            Self::ContentDescription(_) => 12,
+            Self::AccessibilityRole(_) => 13,
+            Self::AccessibilityHeading(_) => 14,
+            Self::Hint(_) => 15,
         }
     }
 }
@@ -401,6 +409,17 @@ impl PatchBatch {
                             payload.extend_from_slice(&(8u16).to_le_bytes());
                             payload.extend_from_slice(&target.to_le_bytes());
                             payload.extend_from_slice(&duration_ms.to_le_bytes());
+                        }
+                        Property::ContentDescription(desc)
+                        | Property::AccessibilityRole(desc)
+                        | Property::Hint(desc) => {
+                            let bytes = desc.as_bytes();
+                            payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                            payload.extend_from_slice(bytes);
+                        }
+                        Property::AccessibilityHeading(h) => {
+                            payload.extend_from_slice(&(1u16).to_le_bytes());
+                            payload.push(if *h { 1 } else { 0 });
                         }
                     }
                 }
@@ -767,6 +786,24 @@ impl PatchBatch {
                                 duration_ms,
                             }
                         }
+                        12 => Property::ContentDescription(
+                            std::str::from_utf8(prop_slice)
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string(),
+                        ),
+                        13 => Property::AccessibilityRole(
+                            std::str::from_utf8(prop_slice)
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string(),
+                        ),
+                        14 => Property::AccessibilityHeading(
+                            prop_slice.first().copied().unwrap_or(0) != 0,
+                        ),
+                        15 => Property::Hint(
+                            std::str::from_utf8(prop_slice)
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string(),
+                        ),
                         _ => return Err(ProtocolError::UnknownPropertyId(prop_id)),
                     };
                     patches.push(Patch::SetProperty { node_id, property });

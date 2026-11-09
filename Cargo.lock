@@ -45,7 +45,19 @@ dependencies = [
  "ferrix-network",
  "ferrix-renderer-protocol",
  "jni",
+ "serde",
+ "serde_json",
  "tracing",
+]
+
+[[package]]
+name = "ferrix-benchmarks"
+version = "0.1.0"
+dependencies = [
+ "ferrix-android",
+ "ferrix-core",
+ "ferrix-reactivity",
+ "ferrix-renderer-protocol",
 ]
 
 [[package]]

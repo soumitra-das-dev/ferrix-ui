@@ -65,6 +65,18 @@ impl Column {
         self
     }
 
+    pub fn content_description(mut self, desc: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::ContentDescription(desc.into()));
+        self
+    }
+
+    pub fn accessibility_heading(mut self, heading: bool) -> Self {
+        self.def.props.push(Property::AccessibilityHeading(heading));
+        self
+    }
+
     pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
         self.def.props.push(Property::AnimateAlpha {
             target,
@@ -170,6 +182,18 @@ impl Row {
         self
     }
 
+    pub fn content_description(mut self, desc: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::ContentDescription(desc.into()));
+        self
+    }
+
+    pub fn accessibility_heading(mut self, heading: bool) -> Self {
+        self.def.props.push(Property::AccessibilityHeading(heading));
+        self
+    }
+
     pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
         self.def.props.push(Property::AnimateAlpha {
             target,
@@ -253,6 +277,18 @@ impl Text {
         self
     }
 
+    pub fn content_description(mut self, desc: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::ContentDescription(desc.into()));
+        self
+    }
+
+    pub fn accessibility_heading(mut self, heading: bool) -> Self {
+        self.def.props.push(Property::AccessibilityHeading(heading));
+        self
+    }
+
     pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
         self.def.props.push(Property::AnimateAlpha {
             target,
@@ -332,6 +368,18 @@ impl Button {
         self
     }
 
+    pub fn content_description(mut self, desc: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::ContentDescription(desc.into()));
+        self
+    }
+
+    pub fn accessibility_heading(mut self, heading: bool) -> Self {
+        self.def.props.push(Property::AccessibilityHeading(heading));
+        self
+    }
+
     pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
         self.def.props.push(Property::AnimateAlpha {
             target,
@@ -386,6 +434,18 @@ impl Image {
 
     pub fn key(mut self, key: impl Into<String>) -> Self {
         self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn content_description(mut self, desc: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::ContentDescription(desc.into()));
+        self
+    }
+
+    pub fn accessibility_heading(mut self, heading: bool) -> Self {
+        self.def.props.push(Property::AccessibilityHeading(heading));
         self
     }
 
@@ -464,6 +524,18 @@ impl ScrollView {
         self
     }
 
+    pub fn content_description(mut self, desc: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::ContentDescription(desc.into()));
+        self
+    }
+
+    pub fn accessibility_heading(mut self, heading: bool) -> Self {
+        self.def.props.push(Property::AccessibilityHeading(heading));
+        self
+    }
+
     pub fn build(self, allocator: &NodeIdAllocator) -> Element {
         self.def.build(allocator)
     }
@@ -475,6 +547,82 @@ impl ScrollView {
 
 impl From<ScrollView> for ElementDef {
     fn from(val: ScrollView) -> Self {
+        val.def
+    }
+}
+
+/// Interactive text input element (maps to native EditText).
+#[derive(Clone, Debug)]
+pub struct TextInput {
+    def: ElementDef,
+}
+
+impl Default for TextInput {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TextInput {
+    pub fn new() -> Self {
+        let mut def = ElementDef::new(ViewType::TextInput);
+        def.event_listeners.push(EventType::TextChanged);
+        Self { def }
+    }
+
+    pub fn text(mut self, text: impl Into<String>) -> Self {
+        self.def.text = Some(text.into());
+        self
+    }
+
+    pub fn hint(mut self, hint: impl Into<String>) -> Self {
+        self.def.props.push(Property::Hint(hint.into()));
+        self
+    }
+
+    pub fn size(mut self, sp: f32) -> Self {
+        self.def.props.push(Property::FontSize(sp));
+        self
+    }
+
+    pub fn text_color(mut self, color: u32) -> Self {
+        self.def.props.push(Property::TextColor(color));
+        self
+    }
+
+    pub fn padding(mut self, p: f32) -> Self {
+        self.def.props.push(Property::Padding {
+            left: p,
+            top: p,
+            right: p,
+            bottom: p,
+        });
+        self
+    }
+
+    pub fn content_description(mut self, desc: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::ContentDescription(desc.into()));
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<TextInput> for ElementDef {
+    fn from(val: TextInput) -> Self {
         val.def
     }
 }

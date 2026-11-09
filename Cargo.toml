@@ -9,6 +9,7 @@ members = [
     "crates/ferrix-network",
     "crates/ferrix-android",
     "crates/ferrix-cli",
+    "benchmarks",
 ]
 
 [workspace.package]
