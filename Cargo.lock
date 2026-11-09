@@ -161,6 +161,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrix-fmt"
+version = "0.1.0"
+dependencies = [
+ "ferrix-compiler",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "ferrix-forms"
 version = "0.1.0"
 dependencies = [
@@ -191,6 +201,32 @@ dependencies = [
  "ferrix-renderer-protocol",
  "taffy",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "ferrix-lint"
+version = "0.1.0"
+dependencies = [
+ "ferrix-compiler",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ferrix-lsp"
+version = "0.1.0"
+dependencies = [
+ "ferrix-compiler",
+ "ferrix-fmt",
+ "ferrix-lint",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
