@@ -12,6 +12,8 @@ members = [
     "crates/ferrix-navigation",
     "crates/ferrix-storage",
     "crates/ferrix-sqlite",
+    "crates/ferrix-store",
+    "crates/ferrix-forms",
     "crates/ferrix-android",
     "crates/ferrix-cli",
     "benchmarks",

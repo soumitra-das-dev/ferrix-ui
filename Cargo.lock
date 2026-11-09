@@ -142,6 +142,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrix-forms"
+version = "0.1.0"
+dependencies = [
+ "ferrix-reactivity",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "ferrix-layout"
 version = "0.1.0"
 dependencies = [
@@ -234,6 +246,19 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ferrix-store"
+version = "0.1.0"
+dependencies = [
+ "ferrix-reactivity",
+ "ferrix-storage",
+ "serde",
+ "serde_json",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
