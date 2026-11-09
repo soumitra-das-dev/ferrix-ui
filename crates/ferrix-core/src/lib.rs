@@ -17,6 +17,14 @@ pub use component::{ComponentContext, State};
 pub use element::{Element, ElementDef};
 pub use handle::ElementHandle;
 pub use node_id::NodeIdAllocator;
+pub use platform::{
+    global_outbox, route_platform_response, use_app_state, use_back_handler, use_camera,
+    use_clipboard, use_keyboard, use_location, use_net_info, use_permission, use_window_dimensions,
+    AccessibilityInfo, Alert, AppState, AppStateKind, BackHandler, CameraState, Clipboard,
+    ClipboardSetter, Dimensions, Keyboard, KeyboardMetrics, Linking, LocationData, NetInfo,
+    NetInfoState, PermissionStatus, PermissionTrigger, PixelRatio, Platform, PlatformOutbox, Share,
+    Vibration, WindowDimensions,
+};
 pub use primitives::{
     use_safe_area_insets, ActivityIndicator, Badge, Button, Center, Checkbox, Column, Divider,
     EdgeInsets, FlatList, Fragment, Grid, Icon, Image, ImageBackground, LazyList, LinearGradient,
@@ -34,6 +42,14 @@ pub mod prelude {
     pub use crate::element::{Element, ElementDef};
     pub use crate::handle::ElementHandle;
     pub use crate::node_id::NodeIdAllocator;
+    pub use crate::platform::{
+        global_outbox, route_platform_response, use_app_state, use_back_handler, use_camera,
+        use_clipboard, use_keyboard, use_location, use_net_info, use_permission,
+        use_window_dimensions, AccessibilityInfo, Alert, AppState, AppStateKind, BackHandler,
+        CameraState, Clipboard, ClipboardSetter, Dimensions, Keyboard, KeyboardMetrics, Linking,
+        LocationData, NetInfo, NetInfoState, PermissionStatus, PermissionTrigger, PixelRatio,
+        Platform, PlatformOutbox, Share, Vibration, WindowDimensions,
+    };
     pub use crate::primitives::{
         use_safe_area_insets, ActivityIndicator, Badge, Button, Center, Checkbox, Column, Divider,
         EdgeInsets, FlatList, Fragment, Grid, Icon, Image, ImageBackground, LazyList,

@@ -12,6 +12,15 @@ sealed class PlatformRequest {
     data class TakePicture(val requestId: Int) : PlatformRequest()
     data class ReadStorage(val requestId: Int, val key: String) : PlatformRequest()
     data class WriteStorage(val requestId: Int, val key: String, val value: String) : PlatformRequest()
+    data class Vibrate(val durationMs: Long) : PlatformRequest()
+    data class SetClipboard(val text: String) : PlatformRequest()
+    data class GetClipboard(val requestId: Int) : PlatformRequest()
+    data class Share(val title: String, val message: String) : PlatformRequest()
+    data class OpenUrl(val url: String) : PlatformRequest()
+    data class ShowAlert(val title: String, val message: String) : PlatformRequest()
+    object ExitApp : PlatformRequest()
+    object DismissKeyboard : PlatformRequest()
+    data class AnnounceAccessibility(val message: String) : PlatformRequest()
 
     companion object {
         fun decode(buffer: ByteBuffer): PlatformRequest {
@@ -59,6 +68,56 @@ sealed class PlatformRequest {
                     val value = String(vBytes, Charsets.UTF_8)
                     WriteStorage(requestId, key, value)
                 }
+                9 -> {
+                    val durationMs = buffer.long
+                    Vibrate(durationMs)
+                }
+                10 -> {
+                    val len = buffer.int
+                    val bytes = ByteArray(len)
+                    buffer.get(bytes)
+                    SetClipboard(String(bytes, Charsets.UTF_8))
+                }
+                11 -> {
+                    val requestId = buffer.int
+                    GetClipboard(requestId)
+                }
+                12 -> {
+                    val tLen = buffer.int
+                    val tBytes = ByteArray(tLen)
+                    buffer.get(tBytes)
+                    val title = String(tBytes, Charsets.UTF_8)
+                    val mLen = buffer.int
+                    val mBytes = ByteArray(mLen)
+                    buffer.get(mBytes)
+                    val message = String(mBytes, Charsets.UTF_8)
+                    Share(title, message)
+                }
+                13 -> {
+                    val len = buffer.int
+                    val bytes = ByteArray(len)
+                    buffer.get(bytes)
+                    OpenUrl(String(bytes, Charsets.UTF_8))
+                }
+                14 -> {
+                    val tLen = buffer.int
+                    val tBytes = ByteArray(tLen)
+                    buffer.get(tBytes)
+                    val title = String(tBytes, Charsets.UTF_8)
+                    val mLen = buffer.int
+                    val mBytes = ByteArray(mLen)
+                    buffer.get(mBytes)
+                    val message = String(mBytes, Charsets.UTF_8)
+                    ShowAlert(title, message)
+                }
+                15 -> ExitApp
+                16 -> DismissKeyboard
+                17 -> {
+                    val len = buffer.int
+                    val bytes = ByteArray(len)
+                    buffer.get(bytes)
+                    AnnounceAccessibility(String(bytes, Charsets.UTF_8))
+                }
                 else -> throw IllegalArgumentException("Unknown PlatformRequest tag: $tag")
             }
         }
@@ -72,9 +131,15 @@ sealed class PlatformResponse {
     data class PictureTaken(val requestId: Int, val path: String, val width: Int, val height: Int) : PlatformResponse()
     data class StorageResult(val requestId: Int, val key: String, val value: String?) : PlatformResponse()
     data class Error(val requestId: Int, val message: String) : PlatformResponse()
+    data class ClipboardContent(val requestId: Int, val text: String) : PlatformResponse()
+    data class NetInfoUpdate(val isConnected: Boolean, val isWifi: Boolean) : PlatformResponse()
+    data class AppStateChange(val state: Byte) : PlatformResponse() // 0=active, 1=background, 2=inactive
+    data class KeyboardChange(val isVisible: Boolean, val heightDp: Float) : PlatformResponse()
+    data class DimensionsChange(val width: Float, val height: Float, val scale: Float, val fontScale: Float) : PlatformResponse()
+    object BackPressed : PlatformResponse()
 
     fun encode(): ByteArray {
-        val buffer = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN)
+        val buffer = ByteBuffer.allocate(2048).order(ByteOrder.LITTLE_ENDIAN)
         when (this) {
             is PermissionResult -> {
                 buffer.putShort(1)
@@ -126,10 +191,130 @@ sealed class PlatformResponse {
                 buffer.putInt(bytes.size)
                 buffer.put(bytes)
             }
+            is ClipboardContent -> {
+                buffer.putShort(7)
+                buffer.putInt(requestId)
+                val bytes = text.toByteArray(Charsets.UTF_8)
+                buffer.putInt(bytes.size)
+                buffer.put(bytes)
+            }
+            is NetInfoUpdate -> {
+                buffer.putShort(8)
+                buffer.put(if (isConnected) 1.toByte() else 0.toByte())
+                buffer.put(if (isWifi) 1.toByte() else 0.toByte())
+            }
+            is AppStateChange -> {
+                buffer.putShort(9)
+                buffer.put(state)
+            }
+            is KeyboardChange -> {
+                buffer.putShort(10)
+                buffer.put(if (isVisible) 1.toByte() else 0.toByte())
+                buffer.putFloat(heightDp)
+            }
+            is DimensionsChange -> {
+                buffer.putShort(11)
+                buffer.putFloat(width)
+                buffer.putFloat(height)
+                buffer.putFloat(scale)
+                buffer.putFloat(fontScale)
+            }
+            is BackPressed -> {
+                buffer.putShort(12)
+            }
         }
         buffer.flip()
         val result = ByteArray(buffer.remaining())
         buffer.get(result)
         return result
+    }
+
+    companion object {
+        fun decode(buffer: ByteBuffer): PlatformResponse {
+            buffer.order(ByteOrder.LITTLE_ENDIAN)
+            val tag = buffer.short.toInt()
+            return when (tag) {
+                1 -> {
+                    val reqId = buffer.int
+                    val granted = buffer.get() != 0.toByte()
+                    val rationale = buffer.get() != 0.toByte()
+                    PermissionResult(reqId, granted, rationale)
+                }
+                2 -> {
+                    val lat = buffer.double
+                    val lng = buffer.double
+                    val acc = buffer.float
+                    val time = buffer.long
+                    LocationUpdate(lat, lng, acc, time)
+                }
+                3 -> {
+                    val nodeId = buffer.long
+                    val w = buffer.int
+                    val h = buffer.int
+                    CameraReady(nodeId, w, h)
+                }
+                4 -> {
+                    val reqId = buffer.int
+                    val w = buffer.int
+                    val h = buffer.int
+                    val len = buffer.int
+                    val bytes = ByteArray(len)
+                    buffer.get(bytes)
+                    PictureTaken(reqId, String(bytes, Charsets.UTF_8), w, h)
+                }
+                5 -> {
+                    val reqId = buffer.int
+                    val kLen = buffer.int
+                    val kBytes = ByteArray(kLen)
+                    buffer.get(kBytes)
+                    val key = String(kBytes, Charsets.UTF_8)
+                    val hasVal = buffer.get() != 0.toByte()
+                    val value = if (hasVal) {
+                        val vLen = buffer.int
+                        val vBytes = ByteArray(vLen)
+                        buffer.get(vBytes)
+                        String(vBytes, Charsets.UTF_8)
+                    } else null
+                    StorageResult(reqId, key, value)
+                }
+                6 -> {
+                    val reqId = buffer.int
+                    val len = buffer.int
+                    val bytes = ByteArray(len)
+                    buffer.get(bytes)
+                    Error(reqId, String(bytes, Charsets.UTF_8))
+                }
+                7 -> {
+                    val reqId = buffer.int
+                    val len = buffer.int
+                    val bytes = ByteArray(len)
+                    buffer.get(bytes)
+                    ClipboardContent(reqId, String(bytes, Charsets.UTF_8))
+                }
+                8 -> {
+                    val isConnected = buffer.get() != 0.toByte()
+                    val isWifi = buffer.get() != 0.toByte()
+                    NetInfoUpdate(isConnected, isWifi)
+                }
+                9 -> {
+                    val state = buffer.get()
+                    AppStateChange(state)
+                }
+                10 -> {
+                    val isVisible = buffer.get() != 0.toByte()
+                    val heightDp = buffer.float
+                    KeyboardChange(isVisible, heightDp)
+                }
+                11 -> {
+                    val width = buffer.float
+                    val height = buffer.float
+                    val scale = buffer.float
+                    val fontScale = buffer.float
+                    DimensionsChange(width, height, scale, fontScale)
+                }
+                12 -> BackPressed
+                else -> throw IllegalArgumentException("Unknown PlatformResponse tag: $tag")
+            }
+        }
     }
 }

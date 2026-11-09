@@ -71,10 +71,11 @@
 - **Status**: Passed (Verified in `primitives_wave2_tests.rs`, `Wave2ExtendedPrimitivesTest.kt`, `compiler_tests.rs`; 51 workspace tests and all Robolectric tests passing).
 - **Date Passed**: 2026-11-09
 
-### Wave 3: Platform APIs & Hooks 🔴
+### Wave 3: Platform APIs & Hooks 🟢
 - **Scope**: `Dimensions`, `PixelRatio`, `Platform`, `Appearance`, `Keyboard`, `AppState`, `BackHandler`, `Linking`, `Share`, `Vibration`, `Clipboard`, `Alert`, `AccessibilityInfo`, `I18nManager`, `NetInfo`.
 - **Gate**: Platform API test suite & sample app demonstrating platform hooks.
-- **Status**: Planned
+- **Status**: Passed (Verified in `platform_wave3_tests.rs`, `Wave3PlatformTest.kt`, `examples/platform-showcase.fsx`; 58 workspace tests and all Robolectric tests passing).
+- **Date Passed**: 2026-11-09
 
 ### Wave 4: Expo-Style Native Modules 🔴
 - **Scope**: `ferrix-camera`, `ferrix-location`, `ferrix-sensors`, `ferrix-audio`, `ferrix-haptics`, `ferrix-secure-store`, `ferrix-file-system`, `ferrix-image-picker`, `ferrix-document-picker`, `ferrix-media-library`, `ferrix-notifications`, `ferrix-local-authentication`.
