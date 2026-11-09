@@ -53,3 +53,4 @@ class FerrixRecyclerAdapter(
         holder.textView.text = "Item #$position"
     }
 }
+

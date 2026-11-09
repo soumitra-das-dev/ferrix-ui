@@ -8,6 +8,7 @@ members = [
     "crates/ferrix-compiler",
     "crates/ferrix-network",
     "crates/ferrix-modules",
+    "crates/ferrix-router",
     "crates/ferrix-android",
     "crates/ferrix-cli",
     "benchmarks",

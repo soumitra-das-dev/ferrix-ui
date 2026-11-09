@@ -42,3 +42,4 @@ Implement Wave 2 of the Ferrix component library and native platform module laye
    - Document decisions and learnings in `.agent/learnings/wave-02.md`.
    - Mark Wave 2 as Passed in `.agent/milestones.md` and `docs/rn-parity.md`.
    - Commit `feat(wave-2): extended ui primitives`.
+

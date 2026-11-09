@@ -40,3 +40,4 @@
 
 ## 3. Parity Status
 Wave 0 cross-cutting systems are complete and verified. Ready to proceed to **Wave 1: Core Primitives Parity** (`View`, `Text`, `Image`, `TextInput`, `Pressable`, `Button`, `ScrollView`, `FlatList`/`LazyList`, `Switch`, etc.).
+

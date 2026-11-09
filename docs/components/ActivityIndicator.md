@@ -18,3 +18,4 @@ type ActivityIndicatorProps = {
     testID?: String,
 };
 ```
+

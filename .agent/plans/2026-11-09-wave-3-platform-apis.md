@@ -54,3 +54,4 @@ Implement React Native / Expo parity platform APIs and reactive hooks under Arch
    - Android Robolectric tests in `android/ferrix-runtime/src/test/java/com/ferrix/runtime/Wave3PlatformTest.kt`.
    - Example kitchen-sink or platform showcase in `examples/platform-showcase.fsx`.
    - Full workspace verification: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test --workspace`, and `./android/gradlew test`.
+

@@ -11,3 +11,4 @@ export function ImageDemo(): Element {
         </Column>
     );
 }
+

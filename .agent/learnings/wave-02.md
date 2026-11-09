@@ -49,3 +49,4 @@
 
 ## 3. Next Wave (Wave 3)
 Proceeding to **Wave 3: Platform APIs & Hooks** (`Dimensions`, `useWindowDimensions`, `PixelRatio`, `Keyboard`, `AppState`, `BackHandler`, `Linking`, `Share`, `Vibration`, `Clipboard`, `Alert`, `AccessibilityInfo`, `NetInfo`).
+

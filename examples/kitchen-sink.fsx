@@ -35,3 +35,4 @@ export function KitchenSink(): Element {
         </ScrollView>
     );
 }
+

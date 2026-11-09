@@ -54,3 +54,4 @@ object ModuleResultEncoder {
         return buffer.array()
     }
 }
+

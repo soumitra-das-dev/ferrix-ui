@@ -74,3 +74,4 @@ class NativeModuleRegistry(val context: Context) {
         module.invoke(callId, methodId, payload, onResponse)
     }
 }
+

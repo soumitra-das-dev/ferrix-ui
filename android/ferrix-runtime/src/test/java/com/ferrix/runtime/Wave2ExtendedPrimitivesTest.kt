@@ -123,3 +123,4 @@ class Wave2ExtendedPrimitivesTest {
         assertEquals("star", icon?.tag)
     }
 }
+

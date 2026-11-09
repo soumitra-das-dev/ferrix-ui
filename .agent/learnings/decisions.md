@@ -29,3 +29,48 @@
   - Zero per-node JNI chatter: measure requests are aggregated into a single batch.
   - Sub-microsecond cached lookups during reactive re-renders when text content is unchanged.
 
+
+### 2026-11-09 ADR-0004: Style Registry and Interned Style IDs in Renderer Protocol
+- **Context**: Serializing identical property sets across thousands of UI nodes (e.g., list items with identical background, padding, fonts, and elevation) multiplies JNI buffer sizes and wastes CPU cycles in decoding.
+- **Options**:
+  1. *Per-Node Property Inlining*: Send every property on every node in `SetProperty` commands.
+  2. *Ad-hoc Class Name Strings*: Send string class names over JNI and parse them Kotlin-side.
+  3. *Pre-Authorized Style Registry with Interned Style IDs*: Rust registers static/computed styles once via `Patch::RegisterStyles { styles: [(u32, Vec<Property>)] }`. Nodes bind styles using `Patch::SetStyle { node_id, style_id }` or `Patch::SetStyleList { node_id, style_ids }`.
+- **Decision**: Option 3. Additive opcodes `RegisterStyles` (0x0C), `SetStyle` (0x0D), and `SetStyleList` (0x0E). Kotlin maintains a `styleRegistry` map and applies properties directly to views.
+- **Consequences**:
+  - Dramatic reduction in patch buffer sizes (from $O(\text{nodes} \times \text{props})$ to $O(\text{styles} \times \text{props} + \text{nodes})$).
+  - Fine-grained reactive theme changes (e.g. dark mode) update registry entries once, triggering instant view updates.
+  - Full backwards compatibility with existing `SetProperty` commands.
+
+### 2026-11-09 ADR-0005: React Native Layout Defaults over Web CSS Defaults in Native Style IR
+- **Context**: Web CSS specifies `display: inline`, `flex-direction: row`, `position: static`, and `box-sizing: content-box` by default. Mobile UI frameworks (React Native, Flutter) universally use column flexbox and relative positioning as defaults.
+- **Options**:
+  1. *Web CSS defaults*: Requires explicit `display: flex; flex-direction: column;` on virtually every container.
+  2. *React Native defaults*: `display: flex`, `flex-direction: column`, `position: relative`, `box-sizing: border-box`, `min-width: 0`, `min-height: 0`.
+- **Decision**: Option 2. Native Style IR applies React Native layout defaults when properties are unspecified.
+- **Consequences**:
+  - Declarative developer ergonomics match React Native and mobile native expectations.
+  - Clean mapping to Taffy's default layout styles.
+
+### 2026-11-09 ADR-0006: CSS Combinators and Parent-Context Matching Policy
+- **Context**: Full CSS descendant and direct-child combinators (`.parent > .child`, `.card .title`) require DOM traversal. In Architecture A, Rust constructs the element tree and resolves styles prior to layout.
+- **Options**:
+  1. *Reject all combinators*: Only allow simple class selectors `.card_title`.
+  2. *Full runtime DOM query engine*: Heavy memory and execution overhead.
+  3. *Parent-Context Matching during Element Build*: Direct-child (`>`) and contextual descendant rules are resolved during element tree assembly by matching parent class context stored in `ComponentContext`.
+- **Decision**: Option 3. Support direct-child (`>`) and scoped descendant rules via parent class context matching; reject unsupported web pseudo-elements (`::before/::after`) with clear diagnostics.
+- **Consequences**:
+  - Clean component encapsulation while allowing structured styling patterns (`.card > .header`).
+  - No DOM traversal at runtime.
+
+### 2026-11-09 ADR-0007: LightningCSS and Build-Time PostCSS Tooling
+- **Context**: CSS normalization, at-rule processing, color conversion (`oklch`, `hsl`), and shorthand expansion must be fast and zero-runtime-cost.
+- **Options**:
+  1. *Hand-written CSS tokenizer and parser*: Minimal build footprint, but high maintenance for modern CSS syntax.
+  2. *LightningCSS Rust crate*: Extremely fast Rust-based CSS parser/transformer, handles nesting, media queries, CSS variables, and minification.
+  3. *Node-only PostCSS runner*: Requires Node.js installed on every machine, slowing build times.
+- **Decision**: Hybrid approach: LightningCSS is the default Rust-only fast path (no Node required). If `postcss.config.*` exists, `tools/postcss-runner` runs as a build-time subprocess before feeding into the native style pipeline.
+- **Consequences**:
+  - Zero-runtime overhead in the APK.
+  - Zero-dependency fast path for developers without Node.js.
+  - Full compatibility with PostCSS and Tailwind plugins for advanced web workflows.

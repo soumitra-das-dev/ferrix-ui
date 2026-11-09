@@ -286,3 +286,4 @@ class LocalAuthNativeModule(val context: Context) : NativeModule {
         }
     }
 }
+

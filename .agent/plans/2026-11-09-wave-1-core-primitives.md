@@ -50,3 +50,4 @@ Implement the complete core primitive component suite matching React Native core
 - 10,000-item virtualized list scrolling with bounded memory and P95 frame time logged.
 - Controlled `TextInput` IME typing assertion without cursor jumping.
 - Learnings logged in `.agent/learnings/wave-01.md`.
+

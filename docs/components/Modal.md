@@ -20,3 +20,4 @@ type ModalProps = {
     testID?: String,
 };
 ```
+

@@ -23,3 +23,4 @@ Ferrix native modules provide React Native / Expo parity capabilities without a 
 
 ### 4. Lifecycle Binding
 - Native modules receive lifecycle broadcasts (`onStart`, `onStop`, `onDestroy`) directly from the host Activity or Ferrix bridge, guaranteeing prompt teardown of hardware locks, CameraX bindings, and sensors.
+

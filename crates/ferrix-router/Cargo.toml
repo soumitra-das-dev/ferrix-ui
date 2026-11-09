@@ -1,0 +1,18 @@
+[package]
+name = "ferrix-router"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+ferrix-reactivity = { path = "../ferrix-reactivity" }
+ferrix-core = { path = "../ferrix-core" }
+ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }

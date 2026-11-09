@@ -18,3 +18,4 @@ Under Architecture A, Rust owns reactive state, component execution, and layout,
 ### 4. Zero Reflection and Type Safety in Protocol Payloads
 - Unlike traditional React Native bridges which marshal platform requests via dynamic JSON or dictionary objects, Ferrix encodes all 17 platform requests and 12 platform responses into compact binary byte buffers with 2-byte tags and 4-byte LE length prefixes.
 - Zero-copy string slicing and UTF-8 validation ensure zero crash vulnerabilities or reflection overhead at the native boundary.
+

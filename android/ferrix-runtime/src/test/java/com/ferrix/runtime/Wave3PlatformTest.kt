@@ -177,3 +177,4 @@ class Wave3PlatformTest {
         assertEquals(PlatformResponse.BackPressed, backResp)
     }
 }
+

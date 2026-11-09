@@ -14,3 +14,4 @@ export function ViewExample(props: ViewExampleProps): Element {
         </View>
     );
 }
+

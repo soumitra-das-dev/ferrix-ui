@@ -126,6 +126,28 @@ Removes an attached event listener.
 - `node_id`: `u64`
 - `event_type`: `u16`
 
+### 0x0C: `RegisterStyles` (Style Registry)
+Registers a batch of interned styles in the platform renderer style registry. Nodes reference these interned style IDs instead of re-transmitting repeated property sets.
+- `opcode`: `0x0C` (`u8`)
+- `style_count`: `u32`
+- Followed by `style_count` entries:
+  - `style_id`: `u32` (stable interned identifier)
+  - `prop_count`: `u16`
+  - Followed by `prop_count` serialized `Property` records (encoded with `prop_id` + value bytes).
+
+### 0x0D: `SetStyle`
+Applies an interned style from the style registry directly to a node.
+- `opcode`: `0x0D` (`u8`)
+- `node_id`: `u64`
+- `style_id`: `u32`
+
+### 0x0E: `SetStyleList`
+Applies an ordered cascade list of interned style IDs to a node (merging properties from first to last).
+- `opcode`: `0x0E` (`u8`)
+- `node_id`: `u64`
+- `style_count`: `u16`
+- `style_ids`: `[u32; style_count]`
+
 ---
 
 ## 4. Event Protocol (Kotlin → Rust)

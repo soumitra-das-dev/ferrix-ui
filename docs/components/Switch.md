@@ -18,3 +18,4 @@ type SwitchProps = {
     testID?: String,
 };
 ```
+

@@ -33,3 +33,4 @@ Implement modular, lifecycle-aware native modules with compile-time static regis
    - Android Robolectric test: `Wave4NativeModulesTest.kt`.
 5. **Verification & Milestone Gate**:
    - Pass all tests in Rust and Android; log learnings in `.agent/learnings/wave-04.md`.
+
