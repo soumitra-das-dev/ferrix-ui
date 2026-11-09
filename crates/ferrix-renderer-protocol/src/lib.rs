@@ -417,7 +417,7 @@ impl Opcode {
 
 /// Event types dispatched from Kotlin to Rust.
 #[repr(u16)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum EventType {
     Click = 1,
     TextChanged = 2,

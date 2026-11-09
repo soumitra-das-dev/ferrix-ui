@@ -332,6 +332,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrix-test"
+version = "0.1.0"
+dependencies = [
+ "ferrix-core",
+ "ferrix-reactivity",
+ "ferrix-renderer-protocol",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"

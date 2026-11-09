@@ -343,6 +343,20 @@ impl Column {
         self
     }
 
+    pub fn accessibility_role(mut self, role: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityRole(role.into()));
+        self
+    }
+
+    pub fn accessibility_label(mut self, label: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityLabel(label.into()));
+        self
+    }
+
     pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
         self.def.props.push(Property::AnimateAlpha {
             target,
@@ -457,6 +471,20 @@ impl Row {
 
     pub fn accessibility_heading(mut self, heading: bool) -> Self {
         self.def.props.push(Property::AccessibilityHeading(heading));
+        self
+    }
+
+    pub fn accessibility_role(mut self, role: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityRole(role.into()));
+        self
+    }
+
+    pub fn accessibility_label(mut self, label: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityLabel(label.into()));
         self
     }
 
@@ -577,6 +605,20 @@ impl Text {
         self
     }
 
+    pub fn accessibility_role(mut self, role: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityRole(role.into()));
+        self
+    }
+
+    pub fn accessibility_label(mut self, label: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityLabel(label.into()));
+        self
+    }
+
     pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
         self.def.props.push(Property::AnimateAlpha {
             target,
@@ -651,6 +693,11 @@ impl Button {
         self
     }
 
+    pub fn test_id(mut self, id: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(id.into()));
+        self
+    }
+
     pub fn key(mut self, key: impl Into<String>) -> Self {
         self.def.key = Some(key.into());
         self
@@ -665,6 +712,20 @@ impl Button {
 
     pub fn accessibility_heading(mut self, heading: bool) -> Self {
         self.def.props.push(Property::AccessibilityHeading(heading));
+        self
+    }
+
+    pub fn accessibility_role(mut self, role: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityRole(role.into()));
+        self
+    }
+
+    pub fn accessibility_label(mut self, label: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityLabel(label.into()));
         self
     }
 
@@ -987,6 +1048,20 @@ impl ScrollView {
         self
     }
 
+    pub fn accessibility_role(mut self, role: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityRole(role.into()));
+        self
+    }
+
+    pub fn accessibility_label(mut self, label: impl Into<String>) -> Self {
+        self.def
+            .props
+            .push(Property::AccessibilityLabel(label.into()));
+        self
+    }
+
     pub fn build(self, allocator: &NodeIdAllocator) -> Element {
         self.def.build(allocator)
     }
@@ -1029,6 +1104,10 @@ impl TextInput {
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.def.text = Some(text.into());
         self
+    }
+
+    pub fn value(self, val: impl Into<String>) -> Self {
+        self.text(val)
     }
 
     pub fn controlled_text(mut self, version: u32, text: impl Into<String>) -> Self {

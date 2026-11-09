@@ -19,6 +19,7 @@ members = [
     "crates/ferrix-fmt",
     "crates/ferrix-lint",
     "crates/ferrix-lsp",
+    "crates/ferrix-test",
     "crates/ferrix-android",
     "crates/ferrix-cli",
     "benchmarks",
