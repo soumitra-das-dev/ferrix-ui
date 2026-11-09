@@ -9,6 +9,7 @@ use std::sync::Mutex;
 
 use ferrix_core::platform::*;
 use ferrix_core::prelude::*;
+use ferrix_network::QueryStatus;
 use ferrix_renderer_protocol::platform::{PlatformRequest, PlatformResponse};
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jbyteArray, jint, jlong, jobject};
@@ -145,6 +146,134 @@ fn build_platform_tree(
     (tree, perm_btn, loc_btn, cam_btn)
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ProductItem {
+    pub id: u64,
+    pub title: String,
+    pub price: String,
+    pub image_url: String,
+    pub likes: u32,
+    pub liked: bool,
+}
+
+pub fn get_mock_products() -> Vec<ProductItem> {
+    vec![
+        ProductItem {
+            id: 1,
+            title: "Ferrix Pro Wireless Headphones".to_string(),
+            price: "$199".to_string(),
+            image_url: "https://ferrix.dev/img/headphones.png".to_string(),
+            likes: 12,
+            liked: false,
+        },
+        ProductItem {
+            id: 2,
+            title: "Mechanical Keychron K2".to_string(),
+            price: "$89".to_string(),
+            image_url: "https://ferrix.dev/img/keyboard.png".to_string(),
+            likes: 45,
+            liked: false,
+        },
+        ProductItem {
+            id: 3,
+            title: "LG UltraFine 4K Monitor".to_string(),
+            price: "$499".to_string(),
+            image_url: "https://ferrix.dev/img/monitor.png".to_string(),
+            likes: 27,
+            liked: false,
+        },
+    ]
+}
+
+/// Constructs the declarative UI tree for the API-driven store app.
+pub fn build_api_tree(
+    cx: &mut ComponentContext,
+    status: &QueryStatus<Vec<ProductItem>>,
+    last_interacted_id: Option<u64>,
+) -> (Element, HashMap<NodeId, u64>) {
+    cx.prepare_render();
+
+    let mut scroll_content = Column::new()
+        .padding(20.0)
+        .spacing(16.0)
+        .background_color(0xFF0F172A)
+        .child(
+            Text::new("Ferrix Store (M6 API App)")
+                .size(24.0)
+                .color(0xFFF8FAFC),
+        )
+        .child(
+            Text::new("Data fetched via use_query & mutated via use_mutation")
+                .size(14.0)
+                .color(0xFF94A3B8),
+        );
+
+    let mut like_buttons = HashMap::new();
+
+    match status {
+        QueryStatus::Loading => {
+            scroll_content = scroll_content.child(
+                Text::new("Loading products...")
+                    .size(16.0)
+                    .color(0xFF38BDF8),
+            );
+        }
+        QueryStatus::Error(err) => {
+            scroll_content = scroll_content.child(
+                Text::new(format!("Error loading products: {}", err))
+                    .size(16.0)
+                    .color(0xFFEF4444),
+            );
+        }
+        QueryStatus::Success(products) => {
+            for item in products {
+                let is_recent = last_interacted_id == Some(item.id);
+                let mut card = Column::new()
+                    .key(format!("product_{}", item.id))
+                    .padding(16.0)
+                    .spacing(8.0)
+                    .background_color(0xFF1E293B)
+                    .child(Image::new(&item.image_url).key(format!("img_{}", item.id)))
+                    .child(Text::new(&item.title).size(18.0).color(0xFFFFFFFF))
+                    .child(
+                        Text::new(format!("Price: {} | ❤️ {} Likes", item.price, item.likes))
+                            .size(14.0)
+                            .color(0xFF38BDF8),
+                    )
+                    .child(
+                        Button::new(if item.liked {
+                            "❤️ Liked"
+                        } else {
+                            "🤍 Like"
+                        })
+                        .background_color(if item.liked { 0xFFE11D48 } else { 0xFF3B82F6 })
+                        .text_color(0xFFFFFFFF),
+                    );
+
+                if is_recent {
+                    card = card.animate_scale(1.05, 250);
+                }
+
+                scroll_content = scroll_content.child(card);
+            }
+        }
+    }
+
+    let root = scroll_content.build_with_id(NodeId::new(1), cx.allocator());
+
+    if let QueryStatus::Success(products) = status {
+        for (i, item) in products.iter().enumerate() {
+            if let Some(card) = root.children.get(2 + i) {
+                if let Some(btn) = card.children.get(3) {
+                    like_buttons.insert(btn.id, item.id);
+                }
+            }
+        }
+    }
+
+    (root, like_buttons)
+}
+
 enum AppState {
     Counter {
         context: ComponentContext,
@@ -172,6 +301,14 @@ enum AppState {
         loc_btn: NodeId,
         cam_signal: Signal<CameraState>,
         cam_btn: NodeId,
+    },
+    Api {
+        context: ComponentContext,
+        query_signal: Signal<QueryStatus<Vec<ProductItem>>>,
+        mutation_handle: MutationHandle<Vec<ProductItem>, u64>,
+        current_tree: Element,
+        like_buttons: HashMap<NodeId, u64>,
+        last_liked_id: Option<u64>,
     },
 }
 
@@ -275,6 +412,48 @@ impl FerrixAndroidRuntime {
                 loc_btn,
                 cam_signal,
                 cam_btn,
+            }),
+            pending_patches: Mutex::new(Some(encoded)),
+            pending_platform_requests: Mutex::new(None),
+            jni_call_counter: Mutex::new(0),
+        }
+    }
+
+    /// Creates a runtime running the API-driven store app.
+    pub fn new_api() -> Self {
+        let mut cx = ComponentContext::with_start_id(2);
+        let query_signal = use_query(&mut cx, "products_query", || Ok(get_mock_products()));
+
+        let q_clone = query_signal.clone();
+        let mutation_handle = use_mutation(&mut cx, move |product_id: u64| {
+            if let QueryStatus::Success(mut items) = q_clone.get() {
+                if let Some(item) = items.iter_mut().find(|p| p.id == product_id) {
+                    item.liked = !item.liked;
+                    if item.liked {
+                        item.likes += 1;
+                    } else {
+                        item.likes = item.likes.saturating_sub(1);
+                    }
+                }
+                q_clone.set(QueryStatus::Success(items.clone()));
+                Ok(items)
+            } else {
+                Err("Products not loaded".to_string())
+            }
+        });
+
+        let (initial_tree, like_btns) = build_api_tree(&mut cx, &query_signal.get(), None);
+        let initial_batch = generate_mount_patches(&initial_tree);
+        let encoded = initial_batch.encode();
+
+        Self {
+            state: Mutex::new(AppState::Api {
+                context: cx,
+                query_signal,
+                mutation_handle,
+                current_tree: initial_tree,
+                like_buttons: like_btns,
+                last_liked_id: None,
             }),
             pending_patches: Mutex::new(Some(encoded)),
             pending_platform_requests: Mutex::new(None),
@@ -428,6 +607,28 @@ impl FerrixAndroidRuntime {
                     });
                 }
             }
+            AppState::Api {
+                context,
+                query_signal,
+                mutation_handle,
+                current_tree,
+                like_buttons,
+                last_liked_id,
+            } => {
+                if let Some(&product_id) = like_buttons.get(&node_id) {
+                    (mutation_handle.mutate)(product_id);
+                    *last_liked_id = Some(product_id);
+
+                    let (new_tree, new_buttons) =
+                        build_api_tree(context, &query_signal.get(), *last_liked_id);
+                    let diff_batch = diff_elements(current_tree, &new_tree);
+
+                    *current_tree = new_tree;
+                    *like_buttons = new_buttons;
+
+                    return Some(diff_batch.encode());
+                }
+            }
         }
 
         None
@@ -475,6 +676,7 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInitApp(
         let runtime = match name_str.as_str() {
             "todo" => Box::new(FerrixAndroidRuntime::new_todo()),
             "platform" => Box::new(FerrixAndroidRuntime::new_platform()),
+            "api" => Box::new(FerrixAndroidRuntime::new_api()),
             _ => Box::new(FerrixAndroidRuntime::new_counter()),
         };
         Box::into_raw(runtime) as jlong
@@ -624,6 +826,7 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDestroy(
                 AppState::Counter { context, .. } => context.unmount(),
                 AppState::Todo { context, .. } => context.unmount(),
                 AppState::Platform { context, .. } => context.unmount(),
+                AppState::Api { context, .. } => context.unmount(),
             }
         }
     });
@@ -775,6 +978,76 @@ mod tests {
         assert!(batch.patches.iter().any(|p| matches!(
             p,
             Patch::SetText { text, .. } if text == "Camera: Active (1920x1080)"
+        )));
+    }
+
+    #[test]
+    fn test_api_runtime_event_and_mutation_cycle() {
+        let runtime = FerrixAndroidRuntime::new_api();
+        let init_buf = runtime.pending_patches.lock().unwrap().clone().unwrap();
+        let init_batch = PatchBatch::decode(&init_buf).unwrap();
+
+        // Must create Image nodes and set ImageUrl properties
+        assert!(init_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::CreateNode {
+                view_type: ViewType::Image,
+                ..
+            }
+        )));
+        assert!(init_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetProperty {
+                property: Property::ImageUrl(_),
+                ..
+            }
+        )));
+
+        // Retrieve like button for product 1
+        let btn_id = match &*runtime.state.lock().unwrap() {
+            AppState::Api { like_buttons, .. } => {
+                let (&id, _) = like_buttons.iter().find(|(_, &p_id)| p_id == 1).unwrap();
+                id
+            }
+            _ => panic!("Expected AppState::Api"),
+        };
+
+        // 1. Click like button (triggers use_mutation)
+        let update_bytes = runtime
+            .handle_event(btn_id, EventType::Click)
+            .expect("Expected UI patch buffer on like");
+        let update_batch = PatchBatch::decode(&update_bytes).unwrap();
+
+        // Assert text updated with 13 likes
+        assert!(update_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text.contains("13 Likes")
+        )));
+
+        // Assert button updated to Liked
+        assert!(update_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text == "❤️ Liked"
+        )));
+
+        // Assert native animation patch was emitted!
+        assert!(update_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetProperty {
+                property: Property::AnimateScale { target, duration_ms },
+                ..
+            } if (*target - 1.05).abs() < f32::EPSILON && *duration_ms == 250
+        )));
+
+        // 2. Click like button again (un-like mutation)
+        let unlike_bytes = runtime
+            .handle_event(btn_id, EventType::Click)
+            .expect("Expected UI patch buffer on unlike");
+        let unlike_batch = PatchBatch::decode(&unlike_bytes).unwrap();
+
+        assert!(unlike_batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text.contains("12 Likes")
         )));
     }
 }

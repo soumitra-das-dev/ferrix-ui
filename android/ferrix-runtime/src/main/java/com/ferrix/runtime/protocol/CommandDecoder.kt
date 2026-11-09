@@ -113,6 +113,26 @@ object CommandDecoder {
                         5 -> Property.Spacing(buf.float)
                         6 -> Property.CornerRadius(buf.float)
                         7 -> Property.Enabled(buf.get() != 0.toByte())
+                        8 -> {
+                            val urlBytes = ByteArray(valLen)
+                            buf.get(urlBytes)
+                            Property.ImageUrl(String(urlBytes, StandardCharsets.UTF_8))
+                        }
+                        9 -> {
+                            val target = buf.float
+                            val durationMs = buf.int.toLong() and 0xFFFFFFFFL
+                            Property.AnimateAlpha(target, durationMs)
+                        }
+                        10 -> {
+                            val target = buf.float
+                            val durationMs = buf.int.toLong() and 0xFFFFFFFFL
+                            Property.AnimateScale(target, durationMs)
+                        }
+                        11 -> {
+                            val target = buf.float
+                            val durationMs = buf.int.toLong() and 0xFFFFFFFFL
+                            Property.AnimateTranslationY(target, durationMs)
+                        }
                         else -> {
                             // Skip unknown property bytes
                             buf.position(buf.position() + valLen)

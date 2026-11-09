@@ -22,7 +22,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(rootLayout)
 
         // Mount Rust UI into native View container
-        bridge.start(this, rootLayout, "platform")
+        val appName = intent.getStringExtra("app") ?: "api"
+        bridge.start(this, rootLayout, appName)
     }
 
     override fun onDestroy() {

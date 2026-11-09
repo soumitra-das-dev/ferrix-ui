@@ -61,4 +61,8 @@ sealed class Property {
     data class Spacing(val dp: Float) : Property()
     data class CornerRadius(val dp: Float) : Property()
     data class Enabled(val enabled: Boolean) : Property()
+    data class ImageUrl(val url: String) : Property()
+    data class AnimateAlpha(val target: Float, val durationMs: Long) : Property()
+    data class AnimateScale(val target: Float, val durationMs: Long) : Property()
+    data class AnimateTranslationY(val target: Float, val durationMs: Long) : Property()
 }

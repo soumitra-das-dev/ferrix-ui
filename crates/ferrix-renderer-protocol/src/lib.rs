@@ -95,6 +95,19 @@ pub enum Property {
     Spacing(f32),
     CornerRadius(f32),
     Enabled(bool),
+    ImageUrl(String),
+    AnimateAlpha {
+        target: f32,
+        duration_ms: u32,
+    },
+    AnimateScale {
+        target: f32,
+        duration_ms: u32,
+    },
+    AnimateTranslationY {
+        target: f32,
+        duration_ms: u32,
+    },
 }
 
 impl Property {
@@ -107,6 +120,10 @@ impl Property {
             Self::Spacing(_) => 5,
             Self::CornerRadius(_) => 6,
             Self::Enabled(_) => 7,
+            Self::ImageUrl(_) => 8,
+            Self::AnimateAlpha { .. } => 9,
+            Self::AnimateScale { .. } => 10,
+            Self::AnimateTranslationY { .. } => 11,
         }
     }
 }
@@ -363,6 +380,27 @@ impl PatchBatch {
                         Property::Enabled(en) => {
                             payload.extend_from_slice(&(1u16).to_le_bytes());
                             payload.push(if *en { 1 } else { 0 });
+                        }
+                        Property::ImageUrl(url) => {
+                            let bytes = url.as_bytes();
+                            payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                            payload.extend_from_slice(bytes);
+                        }
+                        Property::AnimateAlpha {
+                            target,
+                            duration_ms,
+                        }
+                        | Property::AnimateScale {
+                            target,
+                            duration_ms,
+                        }
+                        | Property::AnimateTranslationY {
+                            target,
+                            duration_ms,
+                        } => {
+                            payload.extend_from_slice(&(8u16).to_le_bytes());
+                            payload.extend_from_slice(&target.to_le_bytes());
+                            payload.extend_from_slice(&duration_ms.to_le_bytes());
                         }
                     }
                 }
@@ -679,6 +717,56 @@ impl PatchBatch {
                                 })?,
                         )),
                         7 => Property::Enabled(prop_slice.first().copied().unwrap_or(0) != 0),
+                        8 => Property::ImageUrl(
+                            std::str::from_utf8(prop_slice)
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string(),
+                        ),
+                        9 => {
+                            if prop_slice.len() < 8 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 8,
+                                });
+                            }
+                            let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let duration_ms =
+                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            Property::AnimateAlpha {
+                                target,
+                                duration_ms,
+                            }
+                        }
+                        10 => {
+                            if prop_slice.len() < 8 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 8,
+                                });
+                            }
+                            let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let duration_ms =
+                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            Property::AnimateScale {
+                                target,
+                                duration_ms,
+                            }
+                        }
+                        11 => {
+                            if prop_slice.len() < 8 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 8,
+                                });
+                            }
+                            let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let duration_ms =
+                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            Property::AnimateTranslationY {
+                                target,
+                                duration_ms,
+                            }
+                        }
                         _ => return Err(ProtocolError::UnknownPropertyId(prop_id)),
                     };
                     patches.push(Patch::SetProperty { node_id, property });

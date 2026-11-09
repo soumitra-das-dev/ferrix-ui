@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.collection.LongSparseArray
@@ -165,6 +166,23 @@ class FerrixRenderer(
                             }
                         }
                         is Property.Enabled -> view.isEnabled = prop.enabled
+                        is Property.ImageUrl -> {
+                            if (view is ImageView) {
+                                view.tag = prop.url
+                                view.contentDescription = prop.url
+                                // Set visible placeholder for remote / test images
+                                view.setBackgroundColor(0xFF3B82F6.toInt())
+                            }
+                        }
+                        is Property.AnimateAlpha -> {
+                            view.animate().alpha(prop.target).setDuration(prop.durationMs).start()
+                        }
+                        is Property.AnimateScale -> {
+                            view.animate().scaleX(prop.target).scaleY(prop.target).setDuration(prop.durationMs).start()
+                        }
+                        is Property.AnimateTranslationY -> {
+                            view.animate().translationY(prop.target).setDuration(prop.durationMs).start()
+                        }
                     }
                 }
                 is Patch.SetVisibility -> {

@@ -37,10 +37,11 @@
 - **Status**: Passed (Verified in `PlatformSDKTest.testPlatformSDKCameraAndLocationDemoAppLifecycle` and `platform_hook_tests.rs`; location updates, camera preview binding, and lifecycle teardown cancellation verified; live on Android 34 emulator; screenshot in `docs/m5_screen.png`).
 - **Date Passed**: 2026-11-09
 
-### M6: Network + Advanced UI 🔴
+### M6: Network + Advanced UI 🟢
 - **Scope**: `useQuery`/`useMutation`, WebSocket, lazy lists with recycling, navigation, animations, image loading (Coil).
 - **Gate**: API-driven application.
-- **Status**: Not Started
+- **Status**: Passed (Verified in `ApiDrivenAppTest`, `network_tests.rs`, `query_hook_tests.rs`, and live on Android 34 emulator; remote data fetched via `use_query`, images with URLs rendered, like button mutation via `use_mutation`, and native frame-by-frame Android scale animation; screenshot in `docs/m6_screen.png`).
+- **Date Passed**: 2026-11-09
 
 ### M7: Production 🔴
 - **Scope**: Accessibility (TalkBack), text/IME, state restoration, size/startup/memory optimization, Baseline Profiles, benchmarks vs React Native.

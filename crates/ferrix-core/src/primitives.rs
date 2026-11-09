@@ -65,6 +65,30 @@ impl Column {
         self
     }
 
+    pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateAlpha {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_scale(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateScale {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_translation_y(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateTranslationY {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
     pub fn build(self, allocator: &NodeIdAllocator) -> Element {
         self.def.build(allocator)
     }
@@ -146,6 +170,30 @@ impl Row {
         self
     }
 
+    pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateAlpha {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_scale(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateScale {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_translation_y(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateTranslationY {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
     pub fn build(self, allocator: &NodeIdAllocator) -> Element {
         self.def.build(allocator)
     }
@@ -205,6 +253,30 @@ impl Text {
         self
     }
 
+    pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateAlpha {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_scale(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateScale {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_translation_y(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateTranslationY {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
     pub fn build(self, allocator: &NodeIdAllocator) -> Element {
         self.def.build(allocator)
     }
@@ -260,6 +332,30 @@ impl Button {
         self
     }
 
+    pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateAlpha {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_scale(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateScale {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_translation_y(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateTranslationY {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
     pub fn build(self, allocator: &NodeIdAllocator) -> Element {
         self.def.build(allocator)
     }
@@ -271,6 +367,114 @@ impl Button {
 
 impl From<Button> for ElementDef {
     fn from(val: Button) -> Self {
+        val.def
+    }
+}
+
+/// Image display element.
+#[derive(Clone, Debug)]
+pub struct Image {
+    def: ElementDef,
+}
+
+impl Image {
+    pub fn new(url: impl Into<String>) -> Self {
+        let mut def = ElementDef::new(ViewType::Image);
+        def.props.push(Property::ImageUrl(url.into()));
+        Self { def }
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn animate_alpha(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateAlpha {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_scale(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateScale {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn animate_translation_y(mut self, target: f32, duration_ms: u32) -> Self {
+        self.def.props.push(Property::AnimateTranslationY {
+            target,
+            duration_ms,
+        });
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Image> for ElementDef {
+    fn from(val: Image) -> Self {
+        val.def
+    }
+}
+
+/// Scrollable container element.
+#[derive(Clone, Debug)]
+pub struct ScrollView {
+    def: ElementDef,
+}
+
+impl Default for ScrollView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ScrollView {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::ScrollView),
+        }
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<ElementDef>>) -> Self {
+        for child in children {
+            self.def.children.push(child.into());
+        }
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<ScrollView> for ElementDef {
+    fn from(val: ScrollView) -> Self {
         val.def
     }
 }

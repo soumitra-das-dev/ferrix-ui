@@ -7,3 +7,5 @@ description = "Networking layer for Ferrix running on Tokio/Reqwest behind trait
 
 [dependencies]
 thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

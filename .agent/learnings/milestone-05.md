@@ -29,3 +29,4 @@ Implement native Android platform capabilities:
 
 ## Rule Going Forward
 - Platform adapters must always provide explicit teardown (`destroy()` / `unmount()`) to prevent hardware resource leaks.
+
