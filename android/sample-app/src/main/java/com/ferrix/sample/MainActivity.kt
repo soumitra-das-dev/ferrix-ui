@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(rootLayout)
 
         // Mount Rust UI into native View container
-        bridge.start(this, rootLayout)
+        bridge.start(this, rootLayout, "platform")
     }
 
     override fun onDestroy() {

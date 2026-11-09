@@ -7,8 +7,10 @@ use std::collections::HashMap;
 use std::panic::catch_unwind;
 use std::sync::Mutex;
 
+use ferrix_core::platform::*;
 use ferrix_core::prelude::*;
-use jni::objects::{JClass, JString};
+use ferrix_renderer_protocol::platform::{PlatformRequest, PlatformResponse};
+use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jbyteArray, jint, jlong, jobject};
 use jni::JNIEnv;
 
@@ -92,6 +94,57 @@ fn build_todo_tree(
     (tree, add_button_id, toggle_map, delete_map)
 }
 
+/// Constructs the declarative UI tree for the Camera + Location Platform Demo App.
+fn build_platform_tree(
+    cx: &mut ComponentContext,
+    perm_status: &PermissionStatus,
+    loc_data: &Option<LocationData>,
+    cam_state: &CameraState,
+) -> (Element, NodeId, NodeId, NodeId) {
+    cx.prepare_render();
+
+    let perm_text = match perm_status {
+        PermissionStatus::NotRequested => "Permission: Not Requested".to_string(),
+        PermissionStatus::Granted => "Permission: Granted".to_string(),
+        PermissionStatus::Denied {
+            should_show_rationale,
+        } => {
+            format!("Permission: Denied (rationale: {})", should_show_rationale)
+        }
+    };
+
+    let loc_text = match loc_data {
+        Some(loc) => format!(
+            "Location: Lat {:.4}, Lng {:.4}",
+            loc.latitude, loc.longitude
+        ),
+        None => "Location: Inactive".to_string(),
+    };
+
+    let cam_text = match cam_state {
+        CameraState::Active { width, height } => format!("Camera: Active ({}x{})", width, height),
+        CameraState::Inactive => "Camera: Inactive".to_string(),
+    };
+
+    let tree = Column::new()
+        .padding(20.0)
+        .spacing(12.0)
+        .child(Text::new("Ferrix Platform SDK (M5)").size(22.0))
+        .child(Text::new(perm_text).size(16.0))
+        .child(Button::new("Request Camera Permission"))
+        .child(Text::new(loc_text).size(16.0))
+        .child(Button::new("Start Location Updates"))
+        .child(Text::new(cam_text).size(16.0))
+        .child(Button::new("Start Camera Preview"))
+        .build_with_id(NodeId::new(1), cx.allocator());
+
+    let perm_btn = tree.children[2].id;
+    let loc_btn = tree.children[4].id;
+    let cam_btn = tree.children[6].id;
+
+    (tree, perm_btn, loc_btn, cam_btn)
+}
+
 enum AppState {
     Counter {
         context: ComponentContext,
@@ -109,12 +162,24 @@ enum AppState {
         toggle_map: HashMap<NodeId, u64>,
         delete_map: HashMap<NodeId, u64>,
     },
+    Platform {
+        context: ComponentContext,
+        outbox: PlatformOutbox,
+        current_tree: Element,
+        perm_signal: Signal<PermissionStatus>,
+        perm_btn: NodeId,
+        loc_signal: Signal<Option<LocationData>>,
+        loc_btn: NodeId,
+        cam_signal: Signal<CameraState>,
+        cam_btn: NodeId,
+    },
 }
 
 /// Internal state managed on the Rust side of the Android bridge.
 pub struct FerrixAndroidRuntime {
     state: Mutex<AppState>,
     pending_patches: Mutex<Option<Vec<u8>>>,
+    pending_platform_requests: Mutex<Option<Vec<u8>>>,
     jni_call_counter: Mutex<u64>,
 }
 
@@ -139,6 +204,7 @@ impl FerrixAndroidRuntime {
                 _text_id: text_id,
             }),
             pending_patches: Mutex::new(Some(encoded)),
+            pending_platform_requests: Mutex::new(None),
             jni_call_counter: Mutex::new(0),
         }
     }
@@ -174,6 +240,44 @@ impl FerrixAndroidRuntime {
                 delete_map: deletes,
             }),
             pending_patches: Mutex::new(Some(encoded)),
+            pending_platform_requests: Mutex::new(None),
+            jni_call_counter: Mutex::new(0),
+        }
+    }
+
+    /// Creates a runtime running the Camera + Location Platform Demo App.
+    pub fn new_platform() -> Self {
+        let mut cx = ComponentContext::with_start_id(2);
+        let outbox = PlatformOutbox::new();
+
+        let perm_signal = cx.use_signal(PermissionStatus::NotRequested);
+        let loc_signal = cx.use_signal(None);
+        let cam_signal = cx.use_signal(CameraState::Inactive);
+
+        let (initial_tree, perm_btn, loc_btn, cam_btn) = build_platform_tree(
+            &mut cx,
+            &perm_signal.get(),
+            &loc_signal.get(),
+            &cam_signal.get(),
+        );
+
+        let initial_batch = generate_mount_patches(&initial_tree);
+        let encoded = initial_batch.encode();
+
+        Self {
+            state: Mutex::new(AppState::Platform {
+                context: cx,
+                outbox,
+                current_tree: initial_tree,
+                perm_signal,
+                perm_btn,
+                loc_signal,
+                loc_btn,
+                cam_signal,
+                cam_btn,
+            }),
+            pending_patches: Mutex::new(Some(encoded)),
+            pending_platform_requests: Mutex::new(None),
             jni_call_counter: Mutex::new(0),
         }
     }
@@ -186,6 +290,51 @@ impl FerrixAndroidRuntime {
     /// Total JNI calls handled by this runtime instance.
     pub fn jni_call_count(&self) -> u64 {
         *self.jni_call_counter.lock().unwrap()
+    }
+
+    /// Drains any queued platform requests for native Android execution.
+    pub fn poll_platform_request(&self) -> Option<Vec<u8>> {
+        let state_guard = self.state.lock().unwrap();
+        if let AppState::Platform { outbox, .. } = &*state_guard {
+            let reqs = outbox.drain();
+            if let Some(req) = reqs.into_iter().next() {
+                return Some(req.encode());
+            }
+        }
+        None
+    }
+
+    /// Handles an incoming platform response from Android and returns resulting UI patches.
+    pub fn handle_platform_response(&self, response_bytes: &[u8]) -> Option<Vec<u8>> {
+        *self.jni_call_counter.lock().unwrap() += 1;
+
+        let resp = PlatformResponse::decode(response_bytes).ok()?;
+        let mut state_guard = self.state.lock().unwrap();
+
+        if let AppState::Platform {
+            context,
+            current_tree,
+            perm_signal,
+            loc_signal,
+            cam_signal,
+            ..
+        } = &mut *state_guard
+        {
+            route_platform_response(&resp, Some(perm_signal), Some(loc_signal), Some(cam_signal));
+
+            let (new_tree, _, _, _) = build_platform_tree(
+                context,
+                &perm_signal.get(),
+                &loc_signal.get(),
+                &cam_signal.get(),
+            );
+
+            let diff_batch = diff_elements(current_tree, &new_tree);
+            *current_tree = new_tree;
+            return Some(diff_batch.encode());
+        }
+
+        None
     }
 
     /// Handles an incoming UI event from Kotlin and queues any resulting patch updates.
@@ -256,6 +405,29 @@ impl FerrixAndroidRuntime {
                     return Some(diff_batch.encode());
                 }
             }
+            AppState::Platform {
+                outbox,
+                perm_btn,
+                loc_btn,
+                cam_btn,
+                ..
+            } => {
+                if node_id == *perm_btn {
+                    outbox.push(PlatformRequest::RequestPermission {
+                        request_id: 1,
+                        permission: "android.permission.CAMERA".to_string(),
+                    });
+                } else if node_id == *loc_btn {
+                    outbox.push(PlatformRequest::StartLocationUpdates {
+                        min_interval_ms: 1000,
+                        min_distance_m: 5.0,
+                    });
+                } else if node_id == *cam_btn {
+                    outbox.push(PlatformRequest::StartCameraPreview {
+                        target_node_id: NodeId::new(7),
+                    });
+                }
+            }
         }
 
         None
@@ -287,7 +459,7 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInit(
     result.unwrap_or(0)
 }
 
-/// Initializes the Ferrix Rust runtime with a specific app name ("counter" or "todo").
+/// Initializes the Ferrix Rust runtime with a specific app name ("counter", "todo", or "platform").
 #[no_mangle]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInitApp(
     mut env: JNIEnv,
@@ -302,12 +474,75 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeInitApp(
 
         let runtime = match name_str.as_str() {
             "todo" => Box::new(FerrixAndroidRuntime::new_todo()),
+            "platform" => Box::new(FerrixAndroidRuntime::new_platform()),
             _ => Box::new(FerrixAndroidRuntime::new_counter()),
         };
         Box::into_raw(runtime) as jlong
     });
 
     result.unwrap_or(0)
+}
+
+/// Polls any queued platform request bytes from Rust for native execution in Kotlin.
+#[no_mangle]
+pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativePollPlatformRequests(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) -> jobject {
+    if handle == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let result = catch_unwind(move || {
+        let runtime = unsafe { &*(handle as *const FerrixAndroidRuntime) };
+        if let Some(req_bytes) = runtime.poll_platform_request() {
+            let mut pending = runtime.pending_platform_requests.lock().unwrap();
+            *pending = Some(req_bytes);
+            if let Some(ref mut buf) = *pending {
+                let bb = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
+                return bb.map(|b| b.into_raw()).unwrap_or(std::ptr::null_mut());
+            }
+        }
+        std::ptr::null_mut()
+    });
+
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+/// Dispatches a platform response from Kotlin to Rust and returns any resulting UI patches.
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchPlatformResponse(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    response_bytes: jbyteArray,
+) -> jobject {
+    if handle == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let result = catch_unwind(move || {
+        let runtime = unsafe { &*(handle as *const FerrixAndroidRuntime) };
+        let j_array = unsafe { JByteArray::from_raw(response_bytes) };
+        let bytes: Vec<u8> = match env.convert_byte_array(&j_array) {
+            Ok(b) => b,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        if let Some(patches) = runtime.handle_platform_response(&bytes) {
+            let mut pending = runtime.pending_patches.lock().unwrap();
+            *pending = Some(patches);
+            if let Some(ref mut buf) = *pending {
+                let bb = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
+                return bb.map(|b| b.into_raw()).unwrap_or(std::ptr::null_mut());
+            }
+        }
+        std::ptr::null_mut()
+    });
+
+    result.unwrap_or(std::ptr::null_mut())
 }
 
 /// Retrieves the initial UI patch buffer as a direct byte buffer.
@@ -383,7 +618,13 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDestroy(
     let _ = catch_unwind(|| {
         // SAFETY: Pointer was created by Box::into_raw in nativeInit
         unsafe {
-            drop(Box::from_raw(handle as *mut FerrixAndroidRuntime));
+            let runtime = Box::from_raw(handle as *mut FerrixAndroidRuntime);
+            let mut state_guard = runtime.state.lock().unwrap();
+            match &mut *state_guard {
+                AppState::Counter { context, .. } => context.unmount(),
+                AppState::Todo { context, .. } => context.unmount(),
+                AppState::Platform { context, .. } => context.unmount(),
+            }
         }
     });
 }
@@ -445,5 +686,95 @@ mod tests {
             .expect("Expected patch buffer on add");
         let batch = PatchBatch::decode(&update_bytes).unwrap();
         assert!(!batch.patches.is_empty());
+    }
+
+    #[test]
+    fn test_platform_runtime_event_and_response_cycle() {
+        let runtime = FerrixAndroidRuntime::new_platform();
+        let (perm_btn, loc_btn, cam_btn) = match &*runtime.state.lock().unwrap() {
+            AppState::Platform {
+                perm_btn,
+                loc_btn,
+                cam_btn,
+                ..
+            } => (*perm_btn, *loc_btn, *cam_btn),
+            _ => panic!("Expected AppState::Platform"),
+        };
+
+        // 1. Click permission button
+        runtime.handle_event(perm_btn, EventType::Click);
+        let req_bytes = runtime
+            .poll_platform_request()
+            .expect("Expected queued permission request");
+        let req = PlatformRequest::decode(&req_bytes).unwrap();
+        assert_eq!(
+            req,
+            PlatformRequest::RequestPermission {
+                request_id: 1,
+                permission: "android.permission.CAMERA".to_string()
+            }
+        );
+
+        // 2. Deliver permission response
+        let resp = PlatformResponse::PermissionResult {
+            request_id: 1,
+            granted: true,
+            should_show_rationale: false,
+        };
+        let patch_bytes = runtime
+            .handle_platform_response(&resp.encode())
+            .expect("Expected UI patch buffer");
+        let batch = PatchBatch::decode(&patch_bytes).unwrap();
+        assert!(batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text == "Permission: Granted"
+        )));
+
+        // 3. Click location button
+        runtime.handle_event(loc_btn, EventType::Click);
+        let req_bytes = runtime
+            .poll_platform_request()
+            .expect("Expected queued location request");
+        let req = PlatformRequest::decode(&req_bytes).unwrap();
+        assert!(matches!(req, PlatformRequest::StartLocationUpdates { .. }));
+
+        // 4. Deliver location response
+        let resp = PlatformResponse::LocationUpdate {
+            latitude: 37.7749,
+            longitude: -122.4194,
+            accuracy: 5.0,
+            timestamp: 123456,
+        };
+        let patch_bytes = runtime
+            .handle_platform_response(&resp.encode())
+            .expect("Expected UI patch buffer for location");
+        let batch = PatchBatch::decode(&patch_bytes).unwrap();
+        assert!(batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text.contains("37.7749")
+        )));
+
+        // 5. Click camera button
+        runtime.handle_event(cam_btn, EventType::Click);
+        let req_bytes = runtime
+            .poll_platform_request()
+            .expect("Expected queued camera request");
+        let req = PlatformRequest::decode(&req_bytes).unwrap();
+        assert!(matches!(req, PlatformRequest::StartCameraPreview { .. }));
+
+        // 6. Deliver camera ready response
+        let resp = PlatformResponse::CameraReady {
+            target_node_id: NodeId::new(7),
+            preview_width: 1920,
+            preview_height: 1080,
+        };
+        let patch_bytes = runtime
+            .handle_platform_response(&resp.encode())
+            .expect("Expected UI patch buffer for camera");
+        let batch = PatchBatch::decode(&patch_bytes).unwrap();
+        assert!(batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text == "Camera: Active (1920x1080)"
+        )));
     }
 }

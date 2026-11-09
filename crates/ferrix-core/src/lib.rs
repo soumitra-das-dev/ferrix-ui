@@ -5,6 +5,7 @@
 pub mod component;
 pub mod element;
 pub mod node_id;
+pub mod platform;
 pub mod primitives;
 pub mod reconcile;
 

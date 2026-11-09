@@ -31,10 +31,11 @@
 - **Status**: Passed (Verified end-to-end in `FerrixE2ETest.testGoldenCounterCompilerAotExecution`; verified 1 JNI call, 1 SetText patch, and existing View reuse; verified live on Android 34 emulator with button interaction; screenshot in `docs/m4_screen.png`).
 - **Date Passed**: 2026-11-09
 
-### M5: Platform SDK 🔴
+### M5: Platform SDK 🟢
 - **Scope**: Permissions, camera (CameraX), location (fused), sensors, mic, storage.
 - **Gate**: Camera + location demo app with lifecycle and cancellation handling.
-- **Status**: Not Started
+- **Status**: Passed (Verified in `PlatformSDKTest.testPlatformSDKCameraAndLocationDemoAppLifecycle` and `platform_hook_tests.rs`; location updates, camera preview binding, and lifecycle teardown cancellation verified; live on Android 34 emulator; screenshot in `docs/m5_screen.png`).
+- **Date Passed**: 2026-11-09
 
 ### M6: Network + Advanced UI 🔴
 - **Scope**: `useQuery`/`useMutation`, WebSocket, lazy lists with recycling, navigation, animations, image loading (Coil).

@@ -26,3 +26,4 @@ Build the AOT compiler for `.fsx` files (`ferrix-compiler`), CLI (`ferrix-cli`),
 ## Rule Going Forward
 - Maintain `tag_depth` stack to switch lexer modes cleanly at JSX boundaries.
 - Keep compiler independent of the runtime; codegen emits standard Rust using the public `ferrix-core` builder API.
+

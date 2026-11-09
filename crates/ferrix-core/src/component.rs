@@ -39,6 +39,8 @@ impl<T: Clone + 'static> State<T> {
     }
 }
 
+type EffectCleanup = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
+
 /// Execution context for a functional UI component providing stable-order hook storage.
 pub struct ComponentContext {
     start_id: u64,
@@ -186,7 +188,7 @@ impl ComponentContext {
     ) {
         struct EffectSlot<D> {
             deps: D,
-            cleanup: Option<Box<dyn FnOnce()>>,
+            cleanup: EffectCleanup,
         }
 
         if self.hook_cursor < self.hooks.len() {
@@ -196,15 +198,25 @@ impl ComponentContext {
             self.hook_cursor += 1;
 
             if slot.deps != deps {
-                if let Some(cleanup) = slot.cleanup.take() {
+                if let Some(cleanup) = slot.cleanup.borrow_mut().take() {
                     cleanup();
                 }
                 slot.deps = deps;
-                slot.cleanup = effect();
+                *slot.cleanup.borrow_mut() = effect();
             }
         } else {
-            let cleanup = effect();
-            let slot = EffectSlot { deps, cleanup };
+            let cleanup_cell = Rc::new(RefCell::new(effect()));
+            let cleanup_ref = cleanup_cell.clone();
+            self.cleanups.push(Some(Box::new(move || {
+                if let Some(cb) = cleanup_ref.borrow_mut().take() {
+                    cb();
+                }
+            })));
+
+            let slot = EffectSlot {
+                deps,
+                cleanup: cleanup_cell,
+            };
             self.hooks.push(Box::new(slot));
             self.hook_cursor += 1;
         }

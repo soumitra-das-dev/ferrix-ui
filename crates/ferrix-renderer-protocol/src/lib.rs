@@ -3,6 +3,8 @@
 //! Typed binary UI patch protocol between the Ferrix Rust runtime and platform renderers.
 //! This crate is strictly decoupled and has zero workspace dependencies.
 
+pub mod platform;
+
 use thiserror::Error;
 
 /// Protocol magic header bytes: "FXUI"
@@ -238,6 +240,8 @@ pub enum ProtocolError {
     UnknownVisibility(u8),
     #[error("Unknown event type: {0}")]
     UnknownEventType(u16),
+    #[error("Unknown platform message tag: {0}")]
+    UnknownPlatformTag(u16),
     #[error("Invalid UTF-8 text string")]
     InvalidUtf8,
 }
