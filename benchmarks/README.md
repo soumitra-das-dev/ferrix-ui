@@ -61,3 +61,4 @@ To measure memory and startup timing on a connected device/emulator:
 adb shell am start-activity -W -n com.ferrix.sample/.MainActivity --es app production
 adb shell dumpsys meminfo com.ferrix.sample
 ```
+

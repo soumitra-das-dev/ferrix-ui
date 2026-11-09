@@ -52,3 +52,4 @@
   - Counter clicked and updated in-place (`COUNTER: 1`).
   - Screenshot captured at `docs/m7_screen.png`.
 - Benchmark log documented in `benchmarks/README.md` and `.agent/learnings/perf-log.md`.
+
