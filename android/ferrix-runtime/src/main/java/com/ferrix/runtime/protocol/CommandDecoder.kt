@@ -216,6 +216,60 @@ object CommandDecoder {
                             val bottom = buf.float
                             Property.HitSlop(left, top, right, bottom)
                         }
+                        36 -> {
+                            val textVersion = buf.int.toLong() and 0xFFFFFFFFL
+                            val textLen = valLen - 4
+                            val strBytes = ByteArray(textLen)
+                            buf.get(strBytes)
+                            Property.ControlledText(textVersion, String(strBytes, StandardCharsets.UTF_8))
+                        }
+                        37 -> {
+                            val strBytes = ByteArray(valLen)
+                            buf.get(strBytes)
+                            Property.Placeholder(String(strBytes, StandardCharsets.UTF_8))
+                        }
+                        38 -> Property.PlaceholderTextColor(buf.int)
+                        39 -> Property.SecureTextEntry(buf.get() != 0.toByte())
+                        40 -> Property.KeyboardType(buf.get().toInt() and 0xFF)
+                        41 -> Property.ReturnKeyType(buf.get().toInt() and 0xFF)
+                        42 -> Property.MaxLength(buf.int)
+                        43 -> Property.Multiline(buf.get() != 0.toByte())
+                        44 -> Property.AutoCapitalize(buf.get().toInt() and 0xFF)
+                        45 -> Property.AutoCorrect(buf.get() != 0.toByte())
+                        46 -> Property.Editable(buf.get() != 0.toByte())
+                        47 -> {
+                            val start = buf.int
+                            val end = buf.int
+                            Property.Selection(start, end)
+                        }
+                        48 -> Property.ImageResizeMode(buf.get().toInt() and 0xFF)
+                        49 -> Property.BlurRadius(buf.float)
+                        50 -> Property.TintColor(buf.int)
+                        51 -> Property.ScrollHorizontal(buf.get() != 0.toByte())
+                        52 -> Property.PagingEnabled(buf.get() != 0.toByte())
+                        53 -> Property.ShowsScrollIndicator(buf.get() != 0.toByte())
+                        54 -> {
+                            val x = buf.float
+                            val y = buf.float
+                            Property.ContentOffset(x, y)
+                        }
+                        55 -> Property.ItemCount(buf.int)
+                        56 -> Property.ItemHeight(buf.float)
+                        57 -> Property.SwitchValue(buf.get() != 0.toByte())
+                        58 -> {
+                            val active = buf.int
+                            val inactive = buf.int
+                            Property.TrackColor(active, inactive)
+                        }
+                        59 -> Property.ThumbColor(buf.int)
+                        60 -> Property.IndicatorColor(buf.int)
+                        61 -> Property.IndicatorSize(buf.get().toInt() and 0xFF)
+                        62 -> Property.Animating(buf.get() != 0.toByte())
+                        63 -> Property.ModalVisible(buf.get() != 0.toByte())
+                        64 -> Property.ModalAnimationType(buf.get().toInt() and 0xFF)
+                        65 -> Property.ModalTransparent(buf.get() != 0.toByte())
+                        66 -> Property.Refreshing(buf.get() != 0.toByte())
+                        67 -> Property.ProgressBackgroundColor(buf.int)
                         else -> {
                             buf.position(buf.position() + valLen)
                             null

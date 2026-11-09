@@ -16,7 +16,11 @@ enum class ViewType(val value: Short) {
     FRAGMENT(10),
     SWITCH(11),
     ACTIVITY_INDICATOR(12),
-    MODAL(13);
+    MODAL(13),
+    RECYCLER_VIEW(14),
+    SAFE_AREA_VIEW(15),
+    REFRESH_CONTROL(16),
+    PORTAL(17);
 
     companion object {
         fun fromValue(value: Short): ViewType? = entries.firstOrNull { it.value == value }
@@ -47,7 +51,13 @@ enum class EventType(val value: Short) {
     PRESS_IN(5),
     PRESS_OUT(6),
     LONG_PRESS(7),
-    LAYOUT(8);
+    LAYOUT(8),
+    END_REACHED(9),
+    VALUE_CHANGE(10),
+    SUBMIT_EDITING(11),
+    SELECTION_CHANGE(12),
+    REQUEST_CLOSE(13),
+    REFRESH(14);
 
     companion object {
         fun fromValue(value: Short): EventType? = entries.firstOrNull { it.value == value }
@@ -127,6 +137,52 @@ sealed class Property {
         val right: Float,
         val bottom: Float
     ) : Property()
+
+    // Wave 1 Extensions: Controlled Text & Inputs
+    data class ControlledText(val version: Long, val text: String) : Property()
+    data class Placeholder(val placeholder: String) : Property()
+    data class PlaceholderTextColor(val color: Int) : Property()
+    data class SecureTextEntry(val secure: Boolean) : Property()
+    data class KeyboardType(val keyboardType: Int) : Property()
+    data class ReturnKeyType(val returnKeyType: Int) : Property()
+    data class MaxLength(val maxLength: Int) : Property()
+    data class Multiline(val multiline: Boolean) : Property()
+    data class AutoCapitalize(val mode: Int) : Property()
+    data class AutoCorrect(val enabled: Boolean) : Property()
+    data class Editable(val editable: Boolean) : Property()
+    data class Selection(val start: Int, val end: Int) : Property()
+
+    // Image
+    data class ImageResizeMode(val mode: Int) : Property()
+    data class BlurRadius(val radius: Float) : Property()
+    data class TintColor(val color: Int) : Property()
+
+    // ScrollView & Lists
+    data class ScrollHorizontal(val horizontal: Boolean) : Property()
+    data class PagingEnabled(val enabled: Boolean) : Property()
+    data class ShowsScrollIndicator(val shows: Boolean) : Property()
+    data class ContentOffset(val x: Float, val y: Float) : Property()
+    data class ItemCount(val count: Int) : Property()
+    data class ItemHeight(val height: Float) : Property()
+
+    // Switch
+    data class SwitchValue(val value: Boolean) : Property()
+    data class TrackColor(val active: Int, val inactive: Int) : Property()
+    data class ThumbColor(val color: Int) : Property()
+
+    // ActivityIndicator
+    data class IndicatorColor(val color: Int) : Property()
+    data class IndicatorSize(val size: Int) : Property()
+    data class Animating(val animating: Boolean) : Property()
+
+    // Modal
+    data class ModalVisible(val visible: Boolean) : Property()
+    data class ModalAnimationType(val animationType: Int) : Property()
+    data class ModalTransparent(val transparent: Boolean) : Property()
+
+    // RefreshControl
+    data class Refreshing(val refreshing: Boolean) : Property()
+    data class ProgressBackgroundColor(val color: Int) : Property()
 }
 
 /**

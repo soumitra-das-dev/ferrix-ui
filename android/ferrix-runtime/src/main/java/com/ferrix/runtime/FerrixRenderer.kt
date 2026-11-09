@@ -10,7 +10,11 @@ import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.ShapeDrawable
 import android.os.Build
 import android.os.Looper
+import android.text.InputFilter
+import android.text.InputType
 import android.text.TextUtils
+import android.text.method.PasswordTransformationMethod
+import android.view.inputmethod.EditorInfo
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
@@ -20,9 +24,15 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.appcompat.widget.SwitchCompat
 import androidx.collection.LongSparseArray
 import androidx.core.widget.NestedScrollView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.PagerSnapHelper
+import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.ferrix.runtime.protocol.Command
 import com.ferrix.runtime.protocol.EventType
 import com.ferrix.runtime.protocol.Patch
@@ -31,6 +41,7 @@ import com.ferrix.runtime.protocol.ViewType
 import com.ferrix.runtime.protocol.Visibility
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 
 /**
  * Concrete Android Views renderer for Ferrix.
@@ -44,6 +55,7 @@ class FerrixRenderer(
     val textMeasurer = StaticLayoutTextMeasurer(context)
     private val nodes = LongSparseArray<View>()
     private val nodeViewTypes = LongSparseArray<ViewType>()
+    private val nodeTextVersions = HashMap<Long, Long>()
 
     init {
         // Register the host root view as NodeId 1 if designated as root
@@ -160,6 +172,7 @@ class FerrixRenderer(
                         (view.parent as? ViewGroup)?.removeView(view)
                         nodes.remove(patch.nodeId)
                         nodeViewTypes.remove(patch.nodeId)
+                        nodeTextVersions.remove(patch.nodeId)
                         if (vt != null) {
                             viewFactory.recycleView(vt, view)
                         }
@@ -270,9 +283,6 @@ class FerrixRenderer(
                         }
                         is Property.BorderRadius -> {
                             val rTl = prop.topLeft * density
-                            val rTr = prop.topRight * density
-                            val rBr = prop.bottomRight * density
-                            val rBl = prop.bottomLeft * density
                             view.clipToOutline = true
                             view.outlineProvider = object : ViewOutlineProvider() {
                                 override fun getOutline(v: View, outline: Outline) {
@@ -378,6 +388,193 @@ class FerrixRenderer(
                         is Property.HitSlop -> {
                             // Slop handled on touch interception
                         }
+
+                        // Wave 1 Extensions: Controlled Text & Inputs
+                        is Property.ControlledText -> {
+                            if (view is EditText) {
+                                val lastVer = nodeTextVersions[patch.nodeId] ?: -1L
+                                if (prop.version >= lastVer) {
+                                    nodeTextVersions[patch.nodeId] = prop.version
+                                    if (view.text.toString() != prop.text) {
+                                        val prevTag = view.tag
+                                        view.tag = "PROGRAMMATIC_UPDATE"
+                                        val selStart = view.selectionStart
+                                        val selEnd = view.selectionEnd
+                                        view.setText(prop.text)
+                                        val newLen = prop.text.length
+                                        val newStart = selStart.coerceIn(0, newLen)
+                                        val newEnd = selEnd.coerceIn(0, newLen)
+                                        view.setSelection(newStart, newEnd)
+                                        view.tag = prevTag
+                                    }
+                                }
+                            }
+                        }
+                        is Property.Placeholder -> (view as? EditText)?.hint = prop.placeholder
+                        is Property.PlaceholderTextColor -> (view as? EditText)?.setHintTextColor(prop.color)
+                        is Property.SecureTextEntry -> {
+                            (view as? EditText)?.let { et ->
+                                et.transformationMethod = if (prop.secure) {
+                                    PasswordTransformationMethod.getInstance()
+                                } else {
+                                    null
+                                }
+                            }
+                        }
+                        is Property.KeyboardType -> {
+                            (view as? EditText)?.let { et ->
+                                et.inputType = when (prop.keyboardType) {
+                                    1 -> InputType.TYPE_CLASS_NUMBER
+                                    2 -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                                    3 -> InputType.TYPE_CLASS_PHONE
+                                    4 -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+                                    else -> InputType.TYPE_CLASS_TEXT
+                                }
+                            }
+                        }
+                        is Property.ReturnKeyType -> {
+                            (view as? EditText)?.let { et ->
+                                et.imeOptions = when (prop.returnKeyType) {
+                                    1 -> EditorInfo.IME_ACTION_GO
+                                    2 -> EditorInfo.IME_ACTION_SEARCH
+                                    3 -> EditorInfo.IME_ACTION_SEND
+                                    4 -> EditorInfo.IME_ACTION_NEXT
+                                    else -> EditorInfo.IME_ACTION_DONE
+                                }
+                            }
+                        }
+                        is Property.MaxLength -> {
+                            (view as? EditText)?.let { et ->
+                                if (prop.maxLength > 0) {
+                                    et.filters = arrayOf(InputFilter.LengthFilter(prop.maxLength))
+                                } else {
+                                    et.filters = arrayOf()
+                                }
+                            }
+                        }
+                        is Property.Multiline -> {
+                            (view as? EditText)?.let { et ->
+                                et.isSingleLine = !prop.multiline
+                                if (prop.multiline) {
+                                    et.inputType = et.inputType or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                                }
+                            }
+                        }
+                        is Property.AutoCapitalize -> {
+                            (view as? EditText)?.let { et ->
+                                val flag = when (prop.mode) {
+                                    1 -> InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+                                    2 -> InputType.TYPE_TEXT_FLAG_CAP_WORDS
+                                    3 -> InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                                    else -> 0
+                                }
+                                et.inputType = (et.inputType and InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS.inv()
+                                    and InputType.TYPE_TEXT_FLAG_CAP_WORDS.inv()
+                                    and InputType.TYPE_TEXT_FLAG_CAP_SENTENCES.inv()) or flag
+                            }
+                        }
+                        is Property.AutoCorrect -> {
+                            (view as? EditText)?.let { et ->
+                                if (prop.enabled) {
+                                    et.inputType = et.inputType or InputType.TYPE_TEXT_FLAG_AUTO_CORRECT
+                                } else {
+                                    et.inputType = et.inputType and InputType.TYPE_TEXT_FLAG_AUTO_CORRECT.inv()
+                                }
+                            }
+                        }
+                        is Property.Editable -> {
+                            (view as? EditText)?.let { et ->
+                                et.isEnabled = prop.editable
+                                et.isFocusable = prop.editable
+                                et.isFocusableInTouchMode = prop.editable
+                            }
+                        }
+                        is Property.Selection -> {
+                            (view as? EditText)?.let { et ->
+                                val len = et.text?.length ?: 0
+                                val s = prop.start.coerceIn(0, len)
+                                val e = prop.end.coerceIn(0, len)
+                                et.setSelection(s, e)
+                            }
+                        }
+                        is Property.ImageResizeMode -> {
+                            (view as? ImageView)?.let { iv ->
+                                iv.scaleType = when (prop.mode) {
+                                    1 -> ImageView.ScaleType.CENTER_CROP
+                                    2 -> ImageView.ScaleType.FIT_XY
+                                    3 -> ImageView.ScaleType.CENTER_INSIDE
+                                    else -> ImageView.ScaleType.FIT_CENTER
+                                }
+                            }
+                        }
+                        is Property.BlurRadius -> view.tag = "blur:${prop.radius}"
+                        is Property.TintColor -> (view as? ImageView)?.setColorFilter(prop.color)
+                        is Property.ScrollHorizontal -> {
+                            (view as? RecyclerView)?.let { rv ->
+                                (rv.layoutManager as? LinearLayoutManager)?.orientation =
+                                    if (prop.horizontal) LinearLayoutManager.HORIZONTAL else LinearLayoutManager.VERTICAL
+                            }
+                        }
+                        is Property.PagingEnabled -> {
+                            (view as? RecyclerView)?.let { rv ->
+                                if (prop.enabled && rv.onFlingListener == null) {
+                                    PagerSnapHelper().attachToRecyclerView(rv)
+                                }
+                            }
+                        }
+                        is Property.ShowsScrollIndicator -> {
+                            view.isVerticalScrollBarEnabled = prop.shows
+                            view.isHorizontalScrollBarEnabled = prop.shows
+                        }
+                        is Property.ContentOffset -> {
+                            view.scrollTo((prop.x * density).toInt(), (prop.y * density).toInt())
+                        }
+                        is Property.ItemCount -> {
+                            (view as? RecyclerView)?.let { rv ->
+                                val adapter = (rv.adapter as? FerrixRecyclerAdapter)
+                                    ?: FerrixRecyclerAdapter().also { rv.adapter = it }
+                                adapter.setItemCount(prop.count)
+                            }
+                        }
+                        is Property.ItemHeight -> {
+                            (view as? RecyclerView)?.let { rv ->
+                                val adapter = (rv.adapter as? FerrixRecyclerAdapter)
+                                    ?: FerrixRecyclerAdapter().also { rv.adapter = it }
+                                adapter.setItemHeight((prop.height * density).toInt())
+                            }
+                        }
+                        is Property.SwitchValue -> (view as? CompoundButton)?.isChecked = prop.value
+                        is Property.TrackColor -> {
+                            (view as? SwitchCompat)?.trackTintList = ColorStateList(
+                                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                                intArrayOf(prop.active, prop.inactive)
+                            )
+                        }
+                        is Property.ThumbColor -> {
+                            (view as? SwitchCompat)?.thumbTintList = ColorStateList.valueOf(prop.color)
+                        }
+                        is Property.IndicatorColor -> {
+                            (view as? ProgressBar)?.indeterminateTintList = ColorStateList.valueOf(prop.color)
+                        }
+                        is Property.IndicatorSize -> {}
+                        is Property.Animating -> {
+                            (view as? ProgressBar)?.visibility = if (prop.animating) View.VISIBLE else View.GONE
+                        }
+                        is Property.ModalVisible -> {
+                            view.visibility = if (prop.visible) View.VISIBLE else View.GONE
+                        }
+                        is Property.ModalAnimationType -> {}
+                        is Property.ModalTransparent -> {
+                            if (prop.transparent) {
+                                view.setBackgroundColor(0x00000000)
+                            }
+                        }
+                        is Property.Refreshing -> {
+                            (view as? SwipeRefreshLayout)?.isRefreshing = prop.refreshing
+                        }
+                        is Property.ProgressBackgroundColor -> {
+                            (view as? SwipeRefreshLayout)?.setProgressBackgroundColorSchemeColor(prop.color)
+                        }
                     }
                 }
                 is Patch.SetVisibility -> {
@@ -437,6 +634,36 @@ class FerrixRenderer(
                                 val payload = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN)
                                     .putFloat(x).putFloat(y).putFloat(w).putFloat(h).array()
                                 eventDispatcher(patch.nodeId, EventType.LAYOUT, payload)
+                            }
+                        }
+                        EventType.END_REACHED -> {
+                            (view as? RecyclerView)?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                                    val lm = recyclerView.layoutManager as? LinearLayoutManager ?: return
+                                    val lastVisible = lm.findLastVisibleItemPosition()
+                                    val total = lm.itemCount
+                                    if (total > 0 && lastVisible >= total - 2) {
+                                        eventDispatcher(patch.nodeId, EventType.END_REACHED, null)
+                                    }
+                                }
+                            })
+                        }
+                        EventType.VALUE_CHANGE -> {
+                            (view as? CompoundButton)?.setOnCheckedChangeListener { _, isChecked ->
+                                val payload = byteArrayOf(if (isChecked) 1 else 0)
+                                eventDispatcher(patch.nodeId, EventType.VALUE_CHANGE, payload)
+                            }
+                        }
+                        EventType.SUBMIT_EDITING -> {
+                            (view as? EditText)?.setOnEditorActionListener { _, _, _ ->
+                                val textBytes = (view.text?.toString() ?: "").toByteArray(StandardCharsets.UTF_8)
+                                eventDispatcher(patch.nodeId, EventType.SUBMIT_EDITING, textBytes)
+                                false
+                            }
+                        }
+                        EventType.REFRESH -> {
+                            (view as? SwipeRefreshLayout)?.setOnRefreshListener {
+                                eventDispatcher(patch.nodeId, EventType.REFRESH, null)
                             }
                         }
                         else -> {}

@@ -18,7 +18,10 @@ pub use element::{Element, ElementDef};
 pub use handle::ElementHandle;
 pub use node_id::NodeIdAllocator;
 pub use primitives::{
-    Button, Column, Fragment, Image, Pressable, Row, ScrollView, Text, TextInput, View,
+    use_safe_area_insets, ActivityIndicator, Button, Column, EdgeInsets, FlatList, Fragment, Image,
+    ImageBackground, LazyList, Modal, Portal, Pressable, RefreshControl, Row, SafeAreaView,
+    ScrollView, Switch, Text, TextInput, TouchableHighlight, TouchableOpacity,
+    TouchableWithoutFeedback, View,
 };
 pub use query_hooks::{use_mutation, use_query, MutationHandle};
 pub use reconcile::{diff_elements, generate_mount_patches};
@@ -31,7 +34,10 @@ pub mod prelude {
     pub use crate::handle::ElementHandle;
     pub use crate::node_id::NodeIdAllocator;
     pub use crate::primitives::{
-        Button, Column, Fragment, Image, Pressable, Row, ScrollView, Text, TextInput, View,
+        use_safe_area_insets, ActivityIndicator, Button, Column, EdgeInsets, FlatList, Fragment,
+        Image, ImageBackground, LazyList, Modal, Portal, Pressable, RefreshControl, Row,
+        SafeAreaView, ScrollView, Switch, Text, TextInput, TouchableHighlight, TouchableOpacity,
+        TouchableWithoutFeedback, View,
     };
     pub use crate::query_hooks::{use_mutation, use_query, MutationHandle};
     pub use crate::reconcile::{diff_elements, generate_mount_patches};

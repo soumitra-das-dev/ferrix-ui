@@ -47,11 +47,18 @@ pub enum ViewType {
     Switch = 11,
     ActivityIndicator = 12,
     Modal = 13,
+    RecyclerView = 14,
+    SafeAreaView = 15,
+    RefreshControl = 16,
+    Portal = 17,
 }
 
 impl ViewType {
     /// Alias for Container (standard flex/box ViewGroup).
     pub const VIEW: Self = Self::Container;
+    /// Aliases for virtualized list
+    pub const LAZY_LIST: Self = Self::RecyclerView;
+    pub const FLAT_LIST: Self = Self::RecyclerView;
 
     pub fn from_u16(val: u16) -> Option<Self> {
         match val {
@@ -68,6 +75,10 @@ impl ViewType {
             11 => Some(Self::Switch),
             12 => Some(Self::ActivityIndicator),
             13 => Some(Self::Modal),
+            14 => Some(Self::RecyclerView),
+            15 => Some(Self::SafeAreaView),
+            16 => Some(Self::RefreshControl),
+            17 => Some(Self::Portal),
             _ => None,
         }
     }
@@ -176,6 +187,57 @@ pub enum Property {
         right: f32,
         bottom: f32,
     },
+    // Wave 1 Extensions: Controlled Text & Inputs
+    ControlledText {
+        version: u32,
+        text: String,
+    },
+    Placeholder(String),
+    PlaceholderTextColor(u32),
+    SecureTextEntry(bool),
+    KeyboardType(u8),
+    ReturnKeyType(u8),
+    MaxLength(u32),
+    Multiline(bool),
+    AutoCapitalize(u8),
+    AutoCorrect(bool),
+    Editable(bool),
+    Selection {
+        start: u32,
+        end: u32,
+    },
+    // Image
+    ImageResizeMode(u8),
+    BlurRadius(f32),
+    TintColor(u32),
+    // ScrollView & Lists
+    ScrollHorizontal(bool),
+    PagingEnabled(bool),
+    ShowsScrollIndicator(bool),
+    ContentOffset {
+        x: f32,
+        y: f32,
+    },
+    ItemCount(u32),
+    ItemHeight(f32),
+    // Switch
+    SwitchValue(bool),
+    TrackColor {
+        active: u32,
+        inactive: u32,
+    },
+    ThumbColor(u32),
+    // ActivityIndicator
+    IndicatorColor(u32),
+    IndicatorSize(u8),
+    Animating(bool),
+    // Modal
+    ModalVisible(bool),
+    ModalAnimationType(u8),
+    ModalTransparent(bool),
+    // RefreshControl
+    Refreshing(bool),
+    ProgressBackgroundColor(u32),
 }
 
 impl Property {
@@ -216,6 +278,38 @@ impl Property {
             Self::ImportantForAccessibility(_) => 33,
             Self::RippleColor(_) => 34,
             Self::HitSlop { .. } => 35,
+            Self::ControlledText { .. } => 36,
+            Self::Placeholder(_) => 37,
+            Self::PlaceholderTextColor(_) => 38,
+            Self::SecureTextEntry(_) => 39,
+            Self::KeyboardType(_) => 40,
+            Self::ReturnKeyType(_) => 41,
+            Self::MaxLength(_) => 42,
+            Self::Multiline(_) => 43,
+            Self::AutoCapitalize(_) => 44,
+            Self::AutoCorrect(_) => 45,
+            Self::Editable(_) => 46,
+            Self::Selection { .. } => 47,
+            Self::ImageResizeMode(_) => 48,
+            Self::BlurRadius(_) => 49,
+            Self::TintColor(_) => 50,
+            Self::ScrollHorizontal(_) => 51,
+            Self::PagingEnabled(_) => 52,
+            Self::ShowsScrollIndicator(_) => 53,
+            Self::ContentOffset { .. } => 54,
+            Self::ItemCount(_) => 55,
+            Self::ItemHeight(_) => 56,
+            Self::SwitchValue(_) => 57,
+            Self::TrackColor { .. } => 58,
+            Self::ThumbColor(_) => 59,
+            Self::IndicatorColor(_) => 60,
+            Self::IndicatorSize(_) => 61,
+            Self::Animating(_) => 62,
+            Self::ModalVisible(_) => 63,
+            Self::ModalAnimationType(_) => 64,
+            Self::ModalTransparent(_) => 65,
+            Self::Refreshing(_) => 66,
+            Self::ProgressBackgroundColor(_) => 67,
         }
     }
 }
@@ -268,6 +362,12 @@ pub enum EventType {
     PressOut = 6,
     LongPress = 7,
     Layout = 8,
+    EndReached = 9,
+    ValueChange = 10,
+    SubmitEditing = 11,
+    SelectionChange = 12,
+    RequestClose = 13,
+    Refresh = 14,
 }
 
 impl EventType {
@@ -281,6 +381,12 @@ impl EventType {
             6 => Some(Self::PressOut),
             7 => Some(Self::LongPress),
             8 => Some(Self::Layout),
+            9 => Some(Self::EndReached),
+            10 => Some(Self::ValueChange),
+            11 => Some(Self::SubmitEditing),
+            12 => Some(Self::SelectionChange),
+            13 => Some(Self::RequestClose),
+            14 => Some(Self::Refresh),
             _ => None,
         }
     }
@@ -597,6 +703,73 @@ impl PatchBatch {
                             payload.push(*checked);
                             payload.push(if *busy { 1 } else { 0 });
                             payload.push(*expanded);
+                        }
+                        Property::ControlledText { version, text } => {
+                            let text_bytes = text.as_bytes();
+                            let len = 4 + text_bytes.len();
+                            payload.extend_from_slice(&(len as u16).to_le_bytes());
+                            payload.extend_from_slice(&version.to_le_bytes());
+                            payload.extend_from_slice(text_bytes);
+                        }
+                        Property::Placeholder(s) => {
+                            let bytes = s.as_bytes();
+                            payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                            payload.extend_from_slice(bytes);
+                        }
+                        Property::PlaceholderTextColor(c)
+                        | Property::TintColor(c)
+                        | Property::ThumbColor(c)
+                        | Property::IndicatorColor(c)
+                        | Property::ProgressBackgroundColor(c) => {
+                            payload.extend_from_slice(&(4u16).to_le_bytes());
+                            payload.extend_from_slice(&c.to_le_bytes());
+                        }
+                        Property::SecureTextEntry(b)
+                        | Property::Multiline(b)
+                        | Property::AutoCorrect(b)
+                        | Property::Editable(b)
+                        | Property::ScrollHorizontal(b)
+                        | Property::PagingEnabled(b)
+                        | Property::ShowsScrollIndicator(b)
+                        | Property::SwitchValue(b)
+                        | Property::Animating(b)
+                        | Property::ModalVisible(b)
+                        | Property::ModalTransparent(b)
+                        | Property::Refreshing(b) => {
+                            payload.extend_from_slice(&(1u16).to_le_bytes());
+                            payload.push(if *b { 1 } else { 0 });
+                        }
+                        Property::KeyboardType(u)
+                        | Property::ReturnKeyType(u)
+                        | Property::AutoCapitalize(u)
+                        | Property::ImageResizeMode(u)
+                        | Property::IndicatorSize(u)
+                        | Property::ModalAnimationType(u) => {
+                            payload.extend_from_slice(&(1u16).to_le_bytes());
+                            payload.push(*u);
+                        }
+                        Property::MaxLength(u) | Property::ItemCount(u) => {
+                            payload.extend_from_slice(&(4u16).to_le_bytes());
+                            payload.extend_from_slice(&u.to_le_bytes());
+                        }
+                        Property::Selection { start, end } => {
+                            payload.extend_from_slice(&(8u16).to_le_bytes());
+                            payload.extend_from_slice(&start.to_le_bytes());
+                            payload.extend_from_slice(&end.to_le_bytes());
+                        }
+                        Property::BlurRadius(f) | Property::ItemHeight(f) => {
+                            payload.extend_from_slice(&(4u16).to_le_bytes());
+                            payload.extend_from_slice(&f.to_le_bytes());
+                        }
+                        Property::ContentOffset { x, y } => {
+                            payload.extend_from_slice(&(8u16).to_le_bytes());
+                            payload.extend_from_slice(&x.to_le_bytes());
+                            payload.extend_from_slice(&y.to_le_bytes());
+                        }
+                        Property::TrackColor { active, inactive } => {
+                            payload.extend_from_slice(&(8u16).to_le_bytes());
+                            payload.extend_from_slice(&active.to_le_bytes());
+                            payload.extend_from_slice(&inactive.to_le_bytes());
                         }
                     }
                 }
@@ -1148,6 +1321,159 @@ impl PatchBatch {
                                 bottom: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
                             }
                         }
+                        36 => {
+                            if prop_slice.len() < 4 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                });
+                            }
+                            let version = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let text = std::str::from_utf8(&prop_slice[4..])
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string();
+                            Property::ControlledText { version, text }
+                        }
+                        37 => Property::Placeholder(
+                            std::str::from_utf8(prop_slice)
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string(),
+                        ),
+                        38 => Property::PlaceholderTextColor(u32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
+                        39 => {
+                            Property::SecureTextEntry(prop_slice.first().copied().unwrap_or(0) != 0)
+                        }
+                        40 => Property::KeyboardType(prop_slice.first().copied().unwrap_or(0)),
+                        41 => Property::ReturnKeyType(prop_slice.first().copied().unwrap_or(0)),
+                        42 => {
+                            Property::MaxLength(u32::from_le_bytes(prop_slice.try_into().map_err(
+                                |_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                },
+                            )?))
+                        }
+                        43 => Property::Multiline(prop_slice.first().copied().unwrap_or(0) != 0),
+                        44 => Property::AutoCapitalize(prop_slice.first().copied().unwrap_or(0)),
+                        45 => Property::AutoCorrect(prop_slice.first().copied().unwrap_or(0) != 0),
+                        46 => Property::Editable(prop_slice.first().copied().unwrap_or(0) != 0),
+                        47 => {
+                            if prop_slice.len() < 8 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 8,
+                                });
+                            }
+                            let start = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let end = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            Property::Selection { start, end }
+                        }
+                        48 => Property::ImageResizeMode(prop_slice.first().copied().unwrap_or(0)),
+                        49 => Property::BlurRadius(f32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
+                        50 => {
+                            Property::TintColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                                |_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                },
+                            )?))
+                        }
+                        51 => Property::ScrollHorizontal(
+                            prop_slice.first().copied().unwrap_or(0) != 0,
+                        ),
+                        52 => {
+                            Property::PagingEnabled(prop_slice.first().copied().unwrap_or(0) != 0)
+                        }
+                        53 => Property::ShowsScrollIndicator(
+                            prop_slice.first().copied().unwrap_or(0) != 0,
+                        ),
+                        54 => {
+                            if prop_slice.len() < 8 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 8,
+                                });
+                            }
+                            let x = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let y = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            Property::ContentOffset { x, y }
+                        }
+                        55 => {
+                            Property::ItemCount(u32::from_le_bytes(prop_slice.try_into().map_err(
+                                |_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                },
+                            )?))
+                        }
+                        56 => Property::ItemHeight(f32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
+                        57 => Property::SwitchValue(prop_slice.first().copied().unwrap_or(0) != 0),
+                        58 => {
+                            if prop_slice.len() < 8 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 8,
+                                });
+                            }
+                            let active = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let inactive = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            Property::TrackColor { active, inactive }
+                        }
+                        59 => Property::ThumbColor(u32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
+                        60 => Property::IndicatorColor(u32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
+                        61 => Property::IndicatorSize(prop_slice.first().copied().unwrap_or(0)),
+                        62 => Property::Animating(prop_slice.first().copied().unwrap_or(0) != 0),
+                        63 => Property::ModalVisible(prop_slice.first().copied().unwrap_or(0) != 0),
+                        64 => {
+                            Property::ModalAnimationType(prop_slice.first().copied().unwrap_or(0))
+                        }
+                        65 => Property::ModalTransparent(
+                            prop_slice.first().copied().unwrap_or(0) != 0,
+                        ),
+                        66 => Property::Refreshing(prop_slice.first().copied().unwrap_or(0) != 0),
+                        67 => Property::ProgressBackgroundColor(u32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
                         _ => return Err(ProtocolError::UnknownPropertyId(prop_id)),
                     };
                     patches.push(Patch::SetProperty { node_id, property });
@@ -1790,5 +2116,162 @@ mod tests {
         let resp_decoded =
             decode_text_measure_responses(&resp_encoded).expect("failed to decode responses");
         assert_eq!(responses, resp_decoded);
+    }
+
+    #[test]
+    fn test_wave1_properties_round_trip() {
+        let mut batch = PatchBatch::new();
+        let node = NodeId(500);
+
+        batch.push(Patch::CreateNode {
+            node_id: node,
+            view_type: ViewType::RecyclerView,
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ControlledText {
+                version: 42,
+                text: "Controlled Content".to_string(),
+            },
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Placeholder("Type here...".to_string()),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::PlaceholderTextColor(0x88888888),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::SecureTextEntry(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::KeyboardType(1),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ReturnKeyType(2),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::MaxLength(100),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Multiline(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::AutoCapitalize(1),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::AutoCorrect(false),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Editable(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Selection { start: 2, end: 5 },
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ImageResizeMode(1),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::BlurRadius(5.5),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::TintColor(0xFF112233),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ScrollHorizontal(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::PagingEnabled(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ShowsScrollIndicator(false),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ContentOffset { x: 120.0, y: 340.0 },
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ItemCount(10000),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ItemHeight(64.0),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::SwitchValue(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::TrackColor {
+                active: 0xFF00FF00,
+                inactive: 0xFF888888,
+            },
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ThumbColor(0xFFFFFFFF),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::IndicatorColor(0xFF0000FF),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::IndicatorSize(1),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Animating(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ModalVisible(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ModalAnimationType(2),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ModalTransparent(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Refreshing(false),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::ProgressBackgroundColor(0xFFEEEEEE),
+        });
+        batch.push(Patch::AttachEventListener {
+            node_id: node,
+            event_type: EventType::EndReached,
+        });
+        batch.push(Patch::AttachEventListener {
+            node_id: node,
+            event_type: EventType::Refresh,
+        });
+
+        let encoded = batch.encode();
+        let decoded = PatchBatch::decode(&encoded).expect("failed to decode wave 1 patch batch");
+        assert_eq!(batch, decoded);
     }
 }

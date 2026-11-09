@@ -110,10 +110,27 @@ impl Codegen {
         let mut lines = Vec::new();
 
         // Builder initialization
-        lines.push(format!("{}::new()", elem.tag_name));
+        if elem.tag_name == "Image" {
+            let url_val = elem
+                .attributes
+                .iter()
+                .find(|a| a.name == "url" || a.name == "source")
+                .map(|a| match &a.value {
+                    AttrValue::Literal(Expr::StringLit(s, _)) => format!("\"{}\"", s),
+                    AttrValue::Expr(expr) => self.expr_to_rust(expr),
+                    _ => "\"\"".to_string(),
+                })
+                .unwrap_or_else(|| "\"\"".to_string());
+            lines.push(format!("Image::new({})", url_val));
+        } else {
+            lines.push(format!("{}::new()", elem.tag_name));
+        }
 
         // Attributes
         for attr in &elem.attributes {
+            if elem.tag_name == "Image" && (attr.name == "url" || attr.name == "source") {
+                continue;
+            }
             let val = match &attr.value {
                 AttrValue::Literal(Expr::Int(i, _)) => {
                     if attr.name == "padding"

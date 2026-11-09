@@ -100,3 +100,24 @@ fn test_wave0_primitives_fsx_compilation() {
     assert!(pressable_rust.contains("pub fn PressableExample"));
     assert!(pressable_rust.contains("Pressable::new()"));
 }
+
+#[test]
+fn test_wave1_primitives_fsx_compilation() {
+    let img_fsx = include_str!("../../../examples/primitives/image.fsx");
+    let img_rust = compile_fsx_to_rust(img_fsx, "image.fsx").expect("Failed to compile image.fsx");
+    assert!(img_rust.contains("pub fn ImageDemo"));
+    assert!(img_rust.contains("Image::new(\"https://ferrix.dev/logo.png\")"));
+
+    let input_fsx = include_str!("../../../examples/primitives/text_input.fsx");
+    let input_rust =
+        compile_fsx_to_rust(input_fsx, "text_input.fsx").expect("Failed to compile text_input.fsx");
+    assert!(input_rust.contains("pub fn TextInputDemo"));
+    assert!(input_rust.contains("TextInput::new()"));
+
+    let sink_fsx = include_str!("../../../examples/kitchen-sink.fsx");
+    let sink_rust =
+        compile_fsx_to_rust(sink_fsx, "kitchen-sink.fsx").expect("Failed to compile kitchen sink");
+    assert!(sink_rust.contains("pub fn KitchenSink"));
+    assert!(sink_rust.contains("ScrollView::new()"));
+    assert!(sink_rust.contains("ActivityIndicator::new()"));
+}

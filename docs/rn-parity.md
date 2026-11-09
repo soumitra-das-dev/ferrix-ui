@@ -12,41 +12,41 @@ This document tracks the implementation status of React Native Core primitives a
 ## 1. Wave 0: Foundations & Cross-Cutting Systems
 | System | Subsystems | Status | Notes |
 |---|---|---|---|
-| **Style System** | `StyleSheet.create`, Flexbox props, Spacing, Visual, Colors, Transforms | 🟡 In Progress | Taffy 0.7 mapping, compile-time static & runtime dynamic |
-| **Text Measurement** | Taffy intrinsic measure, StaticLayout cache | 🟡 In Progress | ADR-0003 batched measurement, zero per-node JNI chatter |
-| **Event & Gestures** | Press responder, ripple, hitSlop, nested arbitration | 🟡 In Progress | Resolved in Kotlin, reported to Rust |
-| **Theming** | `useColorScheme`, dynamic colors, ThemeContext | 🟡 In Progress | Light/dark, Material You tokens |
-| **Accessibility** | ARIA-like props (`accessibilityRole`, label, hint, state), `testID` | 🟡 In Progress | Standardized on all primitives |
-| **i18n & RTL** | `start`/`end` logical props, `I18nManager` | 🟡 In Progress | Automatic layout inversion |
-| **Refs & Handles** | `useRef`, `focus()`, `blur()`, `measure()`, `scrollTo()` | 🟡 In Progress | Typed IPC commands Rust → Kotlin |
-| **Fragments** | `<Fragment>`, `<>` transparent containers | 🟡 In Progress | AST + codegen support |
+| **Style System** | `StyleSheet.create`, Flexbox props, Spacing, Visual, Colors, Transforms | ✅ Done | Taffy 0.7 mapping, compile-time static & runtime dynamic |
+| **Text Measurement** | Taffy intrinsic measure, StaticLayout cache | ✅ Done | ADR-0003 batched measurement, zero per-node JNI chatter |
+| **Event & Gestures** | Press responder, ripple, hitSlop, nested arbitration | ✅ Done | Resolved in Kotlin, reported to Rust |
+| **Theming** | `useColorScheme`, dynamic colors, ThemeContext | ✅ Done | Light/dark, Material You tokens |
+| **Accessibility** | ARIA-like props (`accessibilityRole`, label, hint, state), `testID` | ✅ Done | Standardized on all primitives |
+| **i18n & RTL** | `start`/`end` logical props, `I18nManager` | ✅ Done | Automatic layout inversion |
+| **Refs & Handles** | `useRef`, `focus()`, `blur()`, `measure()`, `scrollTo()` | ✅ Done | Typed IPC commands Rust → Kotlin |
+| **Fragments** | `<Fragment>`, `<>` transparent containers | ✅ Done | AST + codegen support |
 
 ---
 
 ## 2. Wave 1: Core Primitives (React Native Parity)
 | Component | Native Android Mapping | Status | Key Features |
 |---|---|---|---|
-| `View` (aka `Box`) | `ViewGroup` / `FrameLayout` | 🟡 In Progress | Pointer events, layout flattening, `onLayout` |
-| `Text` | `TextView` | 🟡 In Progress | Spans, `numberOfLines`, `ellipsizeMode`, font scaling |
-| `Image` | `ImageView` + Coil | 🟡 In Progress | uri/asset/base64, resizeMode, onLoad/onError |
-| `ImageBackground` | Composite View + Image | ⭕ Planned | Nested child rendering over background image |
-| `TextInput` | `EditText` | 🟡 In Progress | Controlled version counter (no cursor jump), IME composition |
-| `Pressable` | Custom View / Ripple | 🟡 In Progress | `pressed` state style function, ripple, hitSlop |
+| `View` (aka `Box`) | `ViewGroup` / `FrameLayout` | ✅ Done | Pointer events, layout flattening, `onLayout` |
+| `Text` | `TextView` | ✅ Done | Spans, `numberOfLines`, `ellipsizeMode`, font scaling |
+| `Image` | `ImageView` + Coil | ✅ Done | uri/asset/base64, resizeMode, onLoad/onError |
+| `ImageBackground` | Composite View + Image | ✅ Done | Nested child rendering over background image |
+| `TextInput` | `EditText` | ✅ Done | Controlled version counter (no cursor jump), IME composition |
+| `Pressable` | Custom View / Ripple | ✅ Done | `pressed` state style function, ripple, hitSlop |
 | `Button` | `MaterialButton` / `Button` | ✅ Done | Native button with title and click event |
-| `ScrollView` | `NestedScrollView` | 🟡 In Progress | Vertical/horizontal, paging, scroll events |
-| `LazyList` (FlatList) | Virtualized / `RecyclerView` | ⭕ Planned | Windowed item virtualization, 10k items 60fps |
+| `ScrollView` | `NestedScrollView` | ✅ Done | Vertical/horizontal, paging, scroll events |
+| `LazyList` (FlatList) | Virtualized / `RecyclerView` | ✅ Done | Windowed item virtualization, 10k items 60fps |
 | `SectionList` | Virtualized / `RecyclerView` | ⭕ Planned | Sticky headers, sectioned items |
-| `Switch` | `SwitchCompat` | ⭕ Planned | Controlled boolean toggle |
-| `ActivityIndicator` | `ProgressBar` | ⭕ Planned | Indeterminate spinner, color, size |
-| `Modal` | `Dialog` / `PopupWindow` | ⭕ Planned | Overlay with animation, back handler |
+| `Switch` | `SwitchCompat` | ✅ Done | Controlled boolean toggle |
+| `ActivityIndicator` | `ProgressBar` | ✅ Done | Indeterminate spinner, color, size |
+| `Modal` | `Dialog` / `PopupWindow` | ✅ Done | Overlay with animation, back handler |
 | `StatusBar` | `WindowInsetsController` | ⭕ Planned | Light/dark content, translucent, background |
-| `SafeAreaView` | Insets padding container | ⭕ Planned | `useSafeAreaInsets` hook integration |
+| `SafeAreaView` | Insets padding container | ✅ Done | `useSafeAreaInsets` hook integration |
 | `KeyboardAvoidingView` | Window insets padding/adjust | ⭕ Planned | Behavior: padding, height, position |
-| `RefreshControl` | `SwipeRefreshLayout` | ⭕ Planned | Pull-to-refresh binding for ScrollView |
-| `TouchableOpacity` | Pressable wrapper | ⭕ Planned | Opacity animation on touch down |
-| `TouchableHighlight` | Pressable wrapper | ⭕ Planned | Background underlay highlight on press |
-| `TouchableWithoutFeedback`| Pressable wrapper | ⭕ Planned | Event capture without visual change |
-| `Portal` | Root overlay container | ⭕ Planned | Escape hierarchy to app root |
+| `RefreshControl` | `SwipeRefreshLayout` | ✅ Done | Pull-to-refresh binding for ScrollView |
+| `TouchableOpacity` | Pressable wrapper | ✅ Done | Opacity animation on touch down |
+| `TouchableHighlight` | Pressable wrapper | ✅ Done | Background underlay highlight on press |
+| `TouchableWithoutFeedback`| Pressable wrapper | ✅ Done | Event capture without visual change |
+| `Portal` | Root overlay container | ✅ Done | Escape hierarchy to app root |
 
 ---
 
