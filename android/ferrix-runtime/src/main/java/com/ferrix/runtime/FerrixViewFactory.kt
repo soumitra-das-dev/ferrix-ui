@@ -238,6 +238,16 @@ class FerrixViewFactory(
                     FrameLayout.LayoutParams.WRAP_CONTENT
                 )
             }
+            ViewType.NAV_CONTAINER -> com.ferrix.runtime.navigation.FerrixNavContainer(context)
+            ViewType.SCREEN -> com.ferrix.runtime.navigation.FerrixScreenView(context)
+            ViewType.HEADER -> com.ferrix.runtime.navigation.FerrixHeaderView(context)
+            ViewType.TAB_BAR -> com.ferrix.runtime.navigation.FerrixTabBarView(context)
+            ViewType.DRAWER -> FrameLayout(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
         }
     }
 

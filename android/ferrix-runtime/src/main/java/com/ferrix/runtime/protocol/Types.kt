@@ -33,7 +33,12 @@ enum class ViewType(val value: Short) {
     PROGRESS_BAR(27),
     BADGE(28),
     LINEAR_GRADIENT(29),
-    ICON(30);
+    ICON(30),
+    NAV_CONTAINER(31),
+    SCREEN(32),
+    HEADER(33),
+    TAB_BAR(34),
+    DRAWER(35);
 
     companion object {
         fun fromValue(value: Short): ViewType? = entries.firstOrNull { it.value == value }
@@ -218,6 +223,9 @@ sealed class Command {
     data class BlurNode(val nodeId: Long) : Command()
     data class ScrollTo(val nodeId: Long, val x: Float, val y: Float, val animated: Boolean) : Command()
     data class MeasureNode(val nodeId: Long) : Command()
+    data class Navigate(val containerId: Long, val screenId: Long, val animation: Byte) : Command()
+    data class GoBack(val containerId: Long, val animation: Byte) : Command()
+    data class SetScreenOptions(val screenId: Long, val title: String, val headerShown: Boolean, val presentation: Byte) : Command()
 }
 
 /**

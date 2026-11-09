@@ -100,6 +100,34 @@ class FerrixRenderer(
                     val loc = IntArray(2)
                     view.getLocationInWindow(loc)
                 }
+                is Command.Navigate -> {
+                    val container = nodes.get(cmd.containerId) as? com.ferrix.runtime.navigation.FerrixNavContainer
+                    val screen = nodes.get(cmd.screenId) as? com.ferrix.runtime.navigation.FerrixScreenView
+                    if (container != null && screen != null) {
+                        container.pushScreen(screen, cmd.animation)
+                    }
+                }
+                is Command.GoBack -> {
+                    val container = nodes.get(cmd.containerId) as? com.ferrix.runtime.navigation.FerrixNavContainer
+                    container?.popScreen(cmd.animation)
+                }
+                is Command.SetScreenOptions -> {
+                    val screen = nodes.get(cmd.screenId) as? com.ferrix.runtime.navigation.FerrixScreenView
+                    if (screen != null) {
+                        screen.nodeId = cmd.screenId
+                        screen.screenTitle = cmd.title
+                        screen.headerShown = cmd.headerShown
+                        screen.presentation = cmd.presentation
+                        var parentView = screen.parent
+                        while (parentView != null) {
+                            if (parentView is com.ferrix.runtime.navigation.FerrixNavContainer) {
+                                parentView.setScreenOptions(cmd.screenId, cmd.title, cmd.headerShown, cmd.presentation)
+                                break
+                            }
+                            parentView = parentView.parent
+                        }
+                    }
+                }
             }
         }
     }

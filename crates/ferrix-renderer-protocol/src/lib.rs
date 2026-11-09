@@ -64,6 +64,11 @@ pub enum ViewType {
     Badge = 28,
     LinearGradient = 29,
     Icon = 30,
+    NavContainer = 31,
+    Screen = 32,
+    Header = 33,
+    TabBar = 34,
+    Drawer = 35,
 }
 
 impl ViewType {
@@ -107,6 +112,11 @@ impl ViewType {
             28 => Some(Self::Badge),
             29 => Some(Self::LinearGradient),
             30 => Some(Self::Icon),
+            31 => Some(Self::NavContainer),
+            32 => Some(Self::Screen),
+            33 => Some(Self::Header),
+            34 => Some(Self::TabBar),
+            35 => Some(Self::Drawer),
             _ => None,
         }
     }
@@ -1797,6 +1807,21 @@ pub enum Command {
     MeasureNode {
         node_id: NodeId,
     },
+    Navigate {
+        container_id: NodeId,
+        screen_id: NodeId,
+        animation: u8,
+    },
+    GoBack {
+        container_id: NodeId,
+        animation: u8,
+    },
+    SetScreenOptions {
+        screen_id: NodeId,
+        title: String,
+        header_shown: bool,
+        presentation: u8,
+    },
 }
 
 /// A batch of imperative commands.
@@ -1853,6 +1878,38 @@ impl CommandBatch {
                 Command::MeasureNode { node_id } => {
                     buf.push(4u8);
                     buf.extend_from_slice(&node_id.raw().to_le_bytes());
+                }
+                Command::Navigate {
+                    container_id,
+                    screen_id,
+                    animation,
+                } => {
+                    buf.push(5u8);
+                    buf.extend_from_slice(&container_id.raw().to_le_bytes());
+                    buf.extend_from_slice(&screen_id.raw().to_le_bytes());
+                    buf.push(*animation);
+                }
+                Command::GoBack {
+                    container_id,
+                    animation,
+                } => {
+                    buf.push(6u8);
+                    buf.extend_from_slice(&container_id.raw().to_le_bytes());
+                    buf.push(*animation);
+                }
+                Command::SetScreenOptions {
+                    screen_id,
+                    title,
+                    header_shown,
+                    presentation,
+                } => {
+                    buf.push(7u8);
+                    buf.extend_from_slice(&screen_id.raw().to_le_bytes());
+                    let title_bytes = title.as_bytes();
+                    buf.extend_from_slice(&(title_bytes.len() as u32).to_le_bytes());
+                    buf.extend_from_slice(title_bytes);
+                    buf.push(if *header_shown { 1 } else { 0 });
+                    buf.push(*presentation);
                 }
             }
         }
@@ -1944,6 +2001,81 @@ impl CommandBatch {
                     ));
                     offset += 8;
                     commands.push(Command::MeasureNode { node_id });
+                }
+                5 => {
+                    if offset + 17 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + 17,
+                        });
+                    }
+                    let container_id = NodeId(u64::from_le_bytes(
+                        bytes[offset..offset + 8].try_into().unwrap(),
+                    ));
+                    offset += 8;
+                    let screen_id = NodeId(u64::from_le_bytes(
+                        bytes[offset..offset + 8].try_into().unwrap(),
+                    ));
+                    offset += 8;
+                    let animation = bytes[offset];
+                    offset += 1;
+                    commands.push(Command::Navigate {
+                        container_id,
+                        screen_id,
+                        animation,
+                    });
+                }
+                6 => {
+                    if offset + 9 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + 9,
+                        });
+                    }
+                    let container_id = NodeId(u64::from_le_bytes(
+                        bytes[offset..offset + 8].try_into().unwrap(),
+                    ));
+                    offset += 8;
+                    let animation = bytes[offset];
+                    offset += 1;
+                    commands.push(Command::GoBack {
+                        container_id,
+                        animation,
+                    });
+                }
+                7 => {
+                    if offset + 14 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + 14,
+                        });
+                    }
+                    let screen_id = NodeId(u64::from_le_bytes(
+                        bytes[offset..offset + 8].try_into().unwrap(),
+                    ));
+                    offset += 8;
+                    let title_len =
+                        u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap()) as usize;
+                    offset += 4;
+                    if offset + title_len + 2 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + title_len + 2,
+                        });
+                    }
+                    let title = String::from_utf8(bytes[offset..offset + title_len].to_vec())
+                        .map_err(|_| ProtocolError::InvalidUtf8)?;
+                    offset += title_len;
+                    let header_shown = bytes[offset] != 0;
+                    offset += 1;
+                    let presentation = bytes[offset];
+                    offset += 1;
+                    commands.push(Command::SetScreenOptions {
+                        screen_id,
+                        title,
+                        header_shown,
+                        presentation,
+                    });
                 }
                 _ => return Err(ProtocolError::UnknownOpcode(op)),
             }
@@ -2232,6 +2364,21 @@ mod tests {
         });
         batch.push(Command::MeasureNode {
             node_id: NodeId(101),
+        });
+        batch.push(Command::Navigate {
+            container_id: NodeId(1),
+            screen_id: NodeId(2),
+            animation: 1,
+        });
+        batch.push(Command::GoBack {
+            container_id: NodeId(1),
+            animation: 2,
+        });
+        batch.push(Command::SetScreenOptions {
+            screen_id: NodeId(2),
+            title: "Screen Title".to_string(),
+            header_shown: true,
+            presentation: 0,
         });
 
         let encoded = batch.encode();

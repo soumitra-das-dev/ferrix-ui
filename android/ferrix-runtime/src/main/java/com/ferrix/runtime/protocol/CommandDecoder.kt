@@ -362,6 +362,27 @@ object CommandDecoder {
                     commands.add(Command.ScrollTo(nodeId, x, y, animated))
                 }
                 4 -> commands.add(Command.MeasureNode(buf.long))
+                5 -> {
+                    val containerId = buf.long
+                    val screenId = buf.long
+                    val animation = buf.get()
+                    commands.add(Command.Navigate(containerId, screenId, animation))
+                }
+                6 -> {
+                    val containerId = buf.long
+                    val animation = buf.get()
+                    commands.add(Command.GoBack(containerId, animation))
+                }
+                7 -> {
+                    val screenId = buf.long
+                    val titleLen = buf.int
+                    val titleBytes = ByteArray(titleLen)
+                    buf.get(titleBytes)
+                    val title = String(titleBytes, StandardCharsets.UTF_8)
+                    val headerShown = buf.get() != 0.toByte()
+                    val presentation = buf.get()
+                    commands.add(Command.SetScreenOptions(screenId, title, headerShown, presentation))
+                }
             }
         }
         return commands

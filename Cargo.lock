@@ -124,6 +124,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrix-navigation"
+version = "0.1.0"
+dependencies = [
+ "ferrix-core",
+ "ferrix-reactivity",
+ "ferrix-renderer-protocol",
+ "ferrix-router",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "ferrix-network"
 version = "0.1.0"
 dependencies = [
