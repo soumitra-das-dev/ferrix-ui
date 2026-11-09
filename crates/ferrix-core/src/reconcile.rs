@@ -1,7 +1,7 @@
 //! UI tree reconciliation, diffing engine, and mount patch generation.
 
 use crate::Element;
-use ferrix_renderer_protocol::{Patch, PatchBatch};
+use ferrix_renderer_protocol::{NodeId, Patch, PatchBatch};
 
 /// Generates the initial batch of patches required to mount a complete Element tree.
 pub fn generate_mount_patches(root: &Element) -> PatchBatch {
@@ -62,14 +62,14 @@ fn mount_subtree(node: &Element, batch: &mut PatchBatch) {
 /// Diffs an existing Element tree against a new Element tree and produces the minimal PatchBatch.
 pub fn diff_elements(old: &Element, new: &Element) -> PatchBatch {
     let mut batch = PatchBatch::new();
-    diff_subtrees(old, new, &mut batch);
+    diff_subtrees_with_id(old, new, old.id, &mut batch);
     batch
 }
 
-fn diff_subtrees(old: &Element, new: &Element, batch: &mut PatchBatch) {
-    // If the node type or identity changed completely, replace the node
-    if old.view_type != new.view_type || old.id != new.id || old.key != new.key {
-        batch.push(Patch::DestroyNode { node_id: old.id });
+fn diff_subtrees_with_id(old: &Element, new: &Element, node_id: NodeId, batch: &mut PatchBatch) {
+    // If the node type changed completely, replace the node
+    if old.view_type != new.view_type || (old.key.is_some() && old.key != new.key) {
+        batch.push(Patch::DestroyNode { node_id });
         mount_subtree(new, batch);
         return;
     }
@@ -78,7 +78,7 @@ fn diff_subtrees(old: &Element, new: &Element, batch: &mut PatchBatch) {
     if old.text != new.text {
         if let Some(text) = &new.text {
             batch.push(Patch::SetText {
-                node_id: new.id,
+                node_id,
                 text: text.clone(),
             });
         }
@@ -87,7 +87,7 @@ fn diff_subtrees(old: &Element, new: &Element, batch: &mut PatchBatch) {
     // 2. Visibility diff
     if old.visibility != new.visibility {
         batch.push(Patch::SetVisibility {
-            node_id: new.id,
+            node_id,
             visibility: new.visibility,
         });
     }
@@ -96,7 +96,7 @@ fn diff_subtrees(old: &Element, new: &Element, batch: &mut PatchBatch) {
     for new_prop in &new.props {
         if !old.props.contains(new_prop) {
             batch.push(Patch::SetProperty {
-                node_id: new.id,
+                node_id,
                 property: new_prop.clone(),
             });
         }
@@ -106,7 +106,7 @@ fn diff_subtrees(old: &Element, new: &Element, batch: &mut PatchBatch) {
     for new_event in &new.event_listeners {
         if !old.event_listeners.contains(new_event) {
             batch.push(Patch::AttachEventListener {
-                node_id: new.id,
+                node_id,
                 event_type: *new_event,
             });
         }
@@ -114,31 +114,52 @@ fn diff_subtrees(old: &Element, new: &Element, batch: &mut PatchBatch) {
     for old_event in &old.event_listeners {
         if !new.event_listeners.contains(old_event) {
             batch.push(Patch::DetachEventListener {
-                node_id: new.id,
+                node_id,
                 event_type: *old_event,
             });
         }
     }
 
     // 5. Children diffing
-    diff_children(old, new, batch);
+    diff_children_with_parent(old, new, node_id, batch);
 }
 
-fn diff_children(old: &Element, new: &Element, batch: &mut PatchBatch) {
+fn diff_children_with_parent(
+    old: &Element,
+    new: &Element,
+    parent_id: NodeId,
+    batch: &mut PatchBatch,
+) {
+    let has_keys = old.children.iter().any(|c| c.key.is_some())
+        || new.children.iter().any(|c| c.key.is_some());
+
+    if has_keys {
+        diff_keyed_children(old, new, parent_id, batch);
+    } else {
+        diff_unkeyed_children(old, new, parent_id, batch);
+    }
+}
+
+fn diff_unkeyed_children(old: &Element, new: &Element, parent_id: NodeId, batch: &mut PatchBatch) {
     let old_len = old.children.len();
     let new_len = new.children.len();
     let common_len = old_len.min(new_len);
 
-    // Diff existing paired children
+    // Diff existing paired children reusing old_child's stable platform ID
     for i in 0..common_len {
-        diff_subtrees(&old.children[i], &new.children[i], batch);
+        diff_subtrees_with_id(
+            &old.children[i],
+            &new.children[i],
+            old.children[i].id,
+            batch,
+        );
     }
 
     // Handle removed children
     if old_len > new_len {
         for old_child in &old.children[new_len..old_len] {
             batch.push(Patch::RemoveChild {
-                parent_id: old.id,
+                parent_id,
                 child_id: old_child.id,
             });
             batch.push(Patch::DestroyNode {
@@ -152,7 +173,78 @@ fn diff_children(old: &Element, new: &Element, batch: &mut PatchBatch) {
         for new_child in &new.children[old_len..new_len] {
             mount_subtree(new_child, batch);
             batch.push(Patch::AppendChild {
-                parent_id: old.id,
+                parent_id,
+                child_id: new_child.id,
+            });
+        }
+    }
+}
+
+fn diff_keyed_children(old: &Element, new: &Element, parent_id: NodeId, batch: &mut PatchBatch) {
+    use std::collections::{HashMap, HashSet};
+
+    let mut old_map = HashMap::new();
+    for (i, child) in old.children.iter().enumerate() {
+        if let Some(key) = &child.key {
+            old_map.insert(key.clone(), (i, child));
+        }
+    }
+
+    // 1. Remove old nodes that no longer exist in new
+    let new_keys: HashSet<_> = new.children.iter().filter_map(|c| c.key.as_ref()).collect();
+    for old_child in &old.children {
+        if let Some(key) = &old_child.key {
+            if !new_keys.contains(key) {
+                batch.push(Patch::RemoveChild {
+                    parent_id,
+                    child_id: old_child.id,
+                });
+                batch.push(Patch::DestroyNode {
+                    node_id: old_child.id,
+                });
+            }
+        }
+    }
+
+    // 2. Insert or update new nodes
+    for (new_idx, new_child) in new.children.iter().enumerate() {
+        if let Some(key) = &new_child.key {
+            if let Some((_, old_child)) = old_map.get(key) {
+                // Keyed match: reconcile in place reusing old_child's stable platform ID!
+                diff_subtrees_with_id(old_child, new_child, old_child.id, batch);
+            } else {
+                // New keyed node: mount
+                mount_subtree(new_child, batch);
+                // Look ahead for the next existing sibling to insert before, if any
+                let next_existing = new.children[new_idx + 1..]
+                    .iter()
+                    .find_map(|c| c.key.as_ref().and_then(|k| old_map.get(k)))
+                    .map(|(_, old_match)| old_match.id);
+
+                if let Some(before_id) = next_existing {
+                    batch.push(Patch::InsertBefore {
+                        parent_id,
+                        child_id: new_child.id,
+                        before_id,
+                    });
+                } else {
+                    batch.push(Patch::AppendChild {
+                        parent_id,
+                        child_id: new_child.id,
+                    });
+                }
+            }
+        } else {
+            // Unkeyed child inside list: match by index if old child at new_idx is also unkeyed
+            if let Some(old_child) = old.children.get(new_idx) {
+                if old_child.key.is_none() && old_child.view_type == new_child.view_type {
+                    diff_subtrees_with_id(old_child, new_child, old_child.id, batch);
+                    continue;
+                }
+            }
+            mount_subtree(new_child, batch);
+            batch.push(Patch::AppendChild {
+                parent_id,
                 child_id: new_child.id,
             });
         }
@@ -244,6 +336,41 @@ mod tests {
         assert!(batch.patches.iter().any(|p| matches!(
             p,
             Patch::AppendChild { parent_id, .. } if *parent_id == id
+        )));
+    }
+
+    #[test]
+    fn test_keyed_children_reconciliation() {
+        let alloc = NodeIdAllocator::with_start(10);
+        let id = NodeId::new(1);
+
+        let old_tree = Column::new()
+            .child(Text::new("Item A").key("item_a"))
+            .child(Text::new("Item B").key("item_b"))
+            .child(Text::new("Item C").key("item_c"))
+            .build_with_id(id, &alloc);
+
+        // Delete item B, insert item D at beginning, keep item A and C
+        alloc.reset(20);
+        let new_tree = Column::new()
+            .child(Text::new("Item D").key("item_d"))
+            .child(Text::new("Item A").key("item_a"))
+            .child(Text::new("Item C").key("item_c"))
+            .build_with_id(id, &alloc);
+
+        let batch = diff_elements(&old_tree, &new_tree);
+
+        // Expect: RemoveChild for Item B (Node 11)
+        assert!(batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::RemoveChild { child_id, .. } if *child_id == NodeId::new(11)
+        )));
+
+        // Expect: InsertBefore for Item D before Item A (Node 10)
+        assert!(batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::InsertBefore { child_id, before_id, .. }
+                if *child_id == NodeId::new(20) && *before_id == NodeId::new(10)
         )));
     }
 }

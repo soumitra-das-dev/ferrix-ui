@@ -22,7 +22,6 @@ class FerrixE2ETest {
         @JvmStatic
         @BeforeClass
         fun loadNativeLibrary() {
-            // Locate the compiled host libferrix_android.so
             val candidatePaths = listOf(
                 "../../target/debug/libferrix_android.so",
                 "target/debug/libferrix_android.so",
@@ -38,7 +37,7 @@ class FerrixE2ETest {
     }
 
     @Test
-    fun testElementSystemColumnRowTextButtonRenderingAndReconciliation() {
+    fun testReactiveTodoAppLifecycleAndKeyedReconciliation() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val rootLayout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -47,59 +46,53 @@ class FerrixE2ETest {
         val bridge = FerrixBridge()
         val renderer = bridge.start(context, rootLayout)
 
-        // 1. Verify renderer node lookups (Nodes 1 through 7)
-        for (id in 1L..7L) {
-            assertNotNull("Expected node $id to exist in renderer", renderer.getView(id))
-        }
-
-        // 2. Verify root container (Column) has 4 direct children
+        // 1. Initial State: Title + Add Button + 2 Todo Rows = 4 children
         assertEquals(4, rootLayout.childCount)
 
-        // Child 0: Title TextView
-        val titleView = rootLayout.getChildAt(0)
-        assertTrue("Expected TextView, got ${titleView.javaClass.simpleName}", titleView is TextView)
-        assertEquals("Ferrix Element System (M2)", (titleView as TextView).text.toString())
+        val titleView = rootLayout.getChildAt(0) as TextView
+        assertEquals("Ferrix Todo App (M3)", titleView.text.toString())
 
-        // Child 1: Subtitle TextView
-        val subView = rootLayout.getChildAt(1)
-        assertTrue("Expected TextView, got ${subView.javaClass.simpleName}", subView is TextView)
-        assertEquals(
-            "Demonstrating Column, Row, Text, and Button from Rust",
-            (subView as TextView).text.toString()
-        )
+        val addBtn = rootLayout.getChildAt(1) as Button
+        assertEquals("+ Add Task", addBtn.text.toString())
 
-        // Child 2: Row (horizontal LinearLayout) containing 2 native Buttons
-        val rowView = rootLayout.getChildAt(2)
-        assertTrue("Expected LinearLayout for Row, got ${rowView.javaClass.simpleName}", rowView is LinearLayout)
-        val rowLayout = rowView as LinearLayout
-        assertEquals(LinearLayout.HORIZONTAL, rowLayout.orientation)
-        assertEquals(2, rowLayout.childCount)
+        // Row 1 (Todo Item 1)
+        val row1 = rootLayout.getChildAt(2) as LinearLayout
+        val text1 = row1.getChildAt(0) as TextView
+        val toggle1 = row1.getChildAt(1) as Button
+        val delete1 = row1.getChildAt(2) as Button
+        assertEquals("[x] Explore Ferrix Architecture", text1.text.toString())
 
-        val incBtn = rowLayout.getChildAt(0)
-        assertTrue("Expected Button, got ${incBtn.javaClass.simpleName}", incBtn is Button)
-        assertEquals("Increment", (incBtn as Button).text.toString())
+        // Row 2 (Todo Item 2)
+        val row2 = rootLayout.getChildAt(3) as LinearLayout
+        val text2 = row2.getChildAt(0) as TextView
+        val toggle2 = row2.getChildAt(1) as Button
+        assertEquals("[ ] Build Reactive Runtime", text2.text.toString())
 
-        val resetBtn = rowLayout.getChildAt(1)
-        assertTrue("Expected Button, got ${resetBtn.javaClass.simpleName}", resetBtn is Button)
-        assertEquals("Reset", (resetBtn as Button).text.toString())
+        // 2. Add new task via "+ Add Task"
+        addBtn.performClick()
+        assertEquals(5, rootLayout.childCount)
+        val row3 = rootLayout.getChildAt(4) as LinearLayout
+        val text3 = row3.getChildAt(0) as TextView
+        assertEquals("[ ] New Ferrix Task #3", text3.text.toString())
 
-        // Child 3: Counter TextView
-        val counterView = rootLayout.getChildAt(3)
-        assertTrue("Expected TextView, got ${counterView.javaClass.simpleName}", counterView is TextView)
-        val counterText = counterView as TextView
-        assertEquals("Counter: 0", counterText.text.toString())
+        // 3. Toggle completion of Todo Item 2
+        toggle2.performClick()
+        assertEquals("[x] Build Reactive Runtime", text2.text.toString())
 
-        // 3. User Interaction & Reconciliation: Click "Increment"
-        incBtn.performClick()
-        assertEquals("Counter: 1", counterText.text.toString())
+        // 4. Delete Todo Item 1
+        delete1.performClick()
+        // Item 1 is removed, child count reduces to 4
+        assertEquals(4, rootLayout.childCount)
 
-        // Click "Increment" again
-        incBtn.performClick()
-        assertEquals("Counter: 2", counterText.text.toString())
+        // Verify remaining items:
+        // Child 0: Title, Child 1: Add Button, Child 2: Item 2, Child 3: Item 3
+        val remainingRow1 = rootLayout.getChildAt(2) as LinearLayout
+        val remainingText1 = remainingRow1.getChildAt(0) as TextView
+        assertEquals("[x] Build Reactive Runtime", remainingText1.text.toString())
 
-        // Click "Reset"
-        resetBtn.performClick()
-        assertEquals("Counter: 0", counterText.text.toString())
+        val remainingRow2 = rootLayout.getChildAt(3) as LinearLayout
+        val remainingText2 = remainingRow2.getChildAt(0) as TextView
+        assertEquals("[ ] New Ferrix Task #3", remainingText2.text.toString())
 
         // Clean teardown
         bridge.destroy()

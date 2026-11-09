@@ -16,6 +16,7 @@ This directory maintains persistent, verified operational knowledge across devel
 | [`backlog.md`](./backlog.md) | Out-of-scope issues and enhancement ideas to triage |
 | [`milestone-01.md`](./milestone-01.md) | Retrospective and gate evidence for Milestone 1: Native Foundation |
 | [`milestone-02.md`](./milestone-02.md) | Retrospective and gate evidence for Milestone 2: Element System |
+| [`milestone-03.md`](./milestone-03.md) | Retrospective and gate evidence for Milestone 3: Reactive Runtime |
 
 ## Standard Entry Format
 ```markdown

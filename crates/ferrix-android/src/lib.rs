@@ -3,6 +3,7 @@
 //! Android JNI glue and native lifecycle controller for Ferrix.
 //! Exposes entry points to Kotlin runtime via packed binary patch buffers.
 
+use std::collections::HashMap;
 use std::panic::catch_unwind;
 use std::sync::Mutex;
 
@@ -11,85 +12,171 @@ use jni::objects::JClass;
 use jni::sys::{jbyteArray, jint, jlong, jobject};
 use jni::JNIEnv;
 
-/// Helper function to construct the declarative UI tree for a given counter value.
-fn build_ui_tree(counter: u32) -> Element {
-    let alloc = NodeIdAllocator::with_start(2);
-    Column::new()
+#[derive(Clone, Debug, PartialEq)]
+pub struct TodoItem {
+    pub id: u64,
+    pub text: String,
+    pub completed: bool,
+}
+
+/// Constructs the declarative UI tree for the interactive Todo App.
+fn build_todo_tree(
+    cx: &mut ComponentContext,
+    items: &[TodoItem],
+) -> (Element, NodeId, HashMap<NodeId, u64>, HashMap<NodeId, u64>) {
+    cx.prepare_render();
+
+    let mut col = Column::new()
         .padding(20.0)
-        .spacing(16.0)
-        .background_color(0xFFF1F5F9)
+        .spacing(12.0)
+        .background_color(0xFFF8FAFC)
         .child(
-            Text::new("Ferrix Element System (M2)")
-                .size(22.0)
+            Text::new("Ferrix Todo App (M3)")
+                .size(24.0)
                 .color(0xFF0F172A),
         )
         .child(
-            Text::new("Demonstrating Column, Row, Text, and Button from Rust")
-                .size(14.0)
-                .color(0xFF475569),
-        )
-        .child(
-            Row::new()
-                .spacing(12.0)
-                .child(
-                    Button::new("Increment")
-                        .background_color(0xFF2563EB)
-                        .text_color(0xFFFFFFFF),
-                )
-                .child(
-                    Button::new("Reset")
-                        .background_color(0xFFDC2626)
-                        .text_color(0xFFFFFFFF),
-                ),
-        )
-        .child(
-            Text::new(format!("Counter: {}", counter))
-                .size(18.0)
-                .color(0xFF1E293B),
-        )
-        .build_with_id(NodeId::new(1), &alloc)
+            Button::new("+ Add Task")
+                .background_color(0xFF16A34A)
+                .text_color(0xFFFFFFFF),
+        );
+
+    for item in items {
+        let status = if item.completed { "[x] " } else { "[ ] " };
+        let row = Row::new()
+            .key(format!("todo_{}", item.id))
+            .spacing(8.0)
+            .child(
+                Text::new(format!("{}{}", status, item.text))
+                    .size(16.0)
+                    .color(if item.completed {
+                        0xFF94A3B8
+                    } else {
+                        0xFF1E293B
+                    }),
+            )
+            .child(
+                Button::new("Toggle")
+                    .background_color(0xFF3B82F6)
+                    .text_color(0xFFFFFFFF),
+            )
+            .child(
+                Button::new("Delete")
+                    .background_color(0xFFEF4444)
+                    .text_color(0xFFFFFFFF),
+            );
+        col = col.child(row);
+    }
+
+    let tree = col.build_with_id(NodeId::new(1), cx.allocator());
+
+    // Map button node IDs to actions
+    let add_button_id = tree.children[1].id;
+    let mut toggle_map = HashMap::new();
+    let mut delete_map = HashMap::new();
+
+    // Keyed todo rows start at index 2
+    for (i, item) in items.iter().enumerate() {
+        if let Some(row) = tree.children.get(2 + i) {
+            if row.children.len() >= 3 {
+                toggle_map.insert(row.children[1].id, item.id);
+                delete_map.insert(row.children[2].id, item.id);
+            }
+        }
+    }
+
+    (tree, add_button_id, toggle_map, delete_map)
 }
 
 /// Internal state managed on the Rust side of the Android bridge.
 pub struct FerrixAndroidRuntime {
+    context: Mutex<ComponentContext>,
+    todos: Mutex<Vec<TodoItem>>,
+    next_todo_id: Mutex<u64>,
     current_tree: Mutex<Element>,
+    add_button_id: Mutex<NodeId>,
+    toggle_map: Mutex<HashMap<NodeId, u64>>,
+    delete_map: Mutex<HashMap<NodeId, u64>>,
     pending_patches: Mutex<Option<Vec<u8>>>,
-    text_counter: Mutex<u32>,
 }
 
 impl FerrixAndroidRuntime {
     pub fn new() -> Self {
-        let initial_tree = build_ui_tree(0);
+        let mut cx = ComponentContext::with_start_id(2);
+        let initial_todos = vec![
+            TodoItem {
+                id: 1,
+                text: "Explore Ferrix Architecture".to_string(),
+                completed: true,
+            },
+            TodoItem {
+                id: 2,
+                text: "Build Reactive Runtime".to_string(),
+                completed: false,
+            },
+        ];
+
+        let (initial_tree, add_btn, toggles, deletes) = build_todo_tree(&mut cx, &initial_todos);
         let initial_batch = generate_mount_patches(&initial_tree);
         let encoded = initial_batch.encode();
 
         Self {
+            context: Mutex::new(cx),
+            todos: Mutex::new(initial_todos),
+            next_todo_id: Mutex::new(3),
             current_tree: Mutex::new(initial_tree),
+            add_button_id: Mutex::new(add_btn),
+            toggle_map: Mutex::new(toggles),
+            delete_map: Mutex::new(deletes),
             pending_patches: Mutex::new(Some(encoded)),
-            text_counter: Mutex::new(0),
         }
     }
 
     /// Handles an incoming UI event from Kotlin and queues any resulting patch updates.
     pub fn handle_event(&self, node_id: NodeId, event_type: EventType) -> Option<Vec<u8>> {
-        let mut counter = self.text_counter.lock().unwrap();
-        let should_update = if node_id == NodeId(5) && event_type == EventType::Click {
-            // Node 5 is "Increment"
-            *counter += 1;
-            true
-        } else if node_id == NodeId(6) && event_type == EventType::Click {
-            // Node 6 is "Reset"
-            *counter = 0;
-            true
-        } else {
-            false
-        };
+        if event_type != EventType::Click {
+            return None;
+        }
 
-        if should_update {
-            let new_tree = build_ui_tree(*counter);
+        let mut todos = self.todos.lock().unwrap();
+        let add_btn = *self.add_button_id.lock().unwrap();
+        let toggle_map = self.toggle_map.lock().unwrap().clone();
+        let delete_map = self.delete_map.lock().unwrap().clone();
+
+        let mut changed = false;
+
+        if node_id == add_btn {
+            let mut next_id = self.next_todo_id.lock().unwrap();
+            todos.push(TodoItem {
+                id: *next_id,
+                text: format!("New Ferrix Task #{}", *next_id),
+                completed: false,
+            });
+            *next_id += 1;
+            changed = true;
+        } else if let Some(&item_id) = toggle_map.get(&node_id) {
+            if let Some(item) = todos.iter_mut().find(|it| it.id == item_id) {
+                item.completed = !item.completed;
+                changed = true;
+            }
+        } else if let Some(&item_id) = delete_map.get(&node_id) {
+            todos.retain(|it| it.id != item_id);
+            changed = true;
+        }
+
+        if changed {
+            let mut cx = self.context.lock().unwrap();
+            let (new_tree, new_add_btn, new_toggles, new_deletes) =
+                build_todo_tree(&mut cx, &todos);
+
             let mut tree_guard = self.current_tree.lock().unwrap();
             let diff_batch = diff_elements(&tree_guard, &new_tree);
+
             *tree_guard = new_tree;
+            *self.add_button_id.lock().unwrap() = new_add_btn;
+            *self.toggle_map.lock().unwrap() = new_toggles;
+            *self.delete_map.lock().unwrap() = new_deletes;
+
             return Some(diff_batch.encode());
         }
 
@@ -225,7 +312,7 @@ mod tests {
 
         let batch = PatchBatch::decode(bytes).expect("Failed to decode initial patch batch");
 
-        // Verify that all 4 view types (Column, Row, Text, Button) are created
+        // Verify initial batch contains Column, Text, Button, Row
         let view_types: Vec<_> = batch
             .patches
             .iter()
@@ -236,43 +323,64 @@ mod tests {
             .collect();
 
         assert!(view_types.contains(&ViewType::Column));
-        assert!(view_types.contains(&ViewType::Row));
         assert!(view_types.contains(&ViewType::Text));
         assert!(view_types.contains(&ViewType::Button));
+        assert!(view_types.contains(&ViewType::Row));
     }
 
     #[test]
     fn test_runtime_event_handling() {
         let runtime = FerrixAndroidRuntime::new();
+        let add_btn = *runtime.add_button_id.lock().unwrap();
 
-        // Node 5 is "Increment"
+        // 1. Click Add Task
         let patch_bytes = runtime
-            .handle_event(NodeId(5), EventType::Click)
-            .expect("Expected patch buffer on Increment click");
+            .handle_event(add_btn, EventType::Click)
+            .expect("Expected patch buffer on Add Task click");
 
         let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
-        assert_eq!(batch.len(), 1);
-        match &batch.patches[0] {
-            Patch::SetText { node_id, text } => {
-                assert_eq!(*node_id, NodeId(7));
-                assert_eq!(text, "Counter: 1");
-            }
-            other => panic!("Expected SetText patch, got {:?}", other),
-        }
+        assert!(!batch.is_empty());
+        assert!(batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text == "[ ] New Ferrix Task #3"
+        )));
 
-        // Node 6 is "Reset"
+        // 2. Click Toggle on Item 2
+        let toggle_node = runtime
+            .toggle_map
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|(_, &item_id)| item_id == 2)
+            .map(|(&btn_id, _)| btn_id)
+            .expect("Expected toggle button for item 2");
+
         let patch_bytes = runtime
-            .handle_event(NodeId(6), EventType::Click)
-            .expect("Expected patch buffer on Reset click");
-
+            .handle_event(toggle_node, EventType::Click)
+            .expect("Expected patch buffer on Toggle click");
         let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
-        assert_eq!(batch.len(), 1);
-        match &batch.patches[0] {
-            Patch::SetText { node_id, text } => {
-                assert_eq!(*node_id, NodeId(7));
-                assert_eq!(text, "Counter: 0");
-            }
-            other => panic!("Expected SetText patch, got {:?}", other),
-        }
+        assert!(batch.patches.iter().any(|p| matches!(
+            p,
+            Patch::SetText { text, .. } if text == "[x] Build Reactive Runtime"
+        )));
+
+        // 3. Click Delete on Item 1
+        let delete_node = runtime
+            .delete_map
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|(_, &item_id)| item_id == 1)
+            .map(|(&btn_id, _)| btn_id)
+            .expect("Expected delete button for item 1");
+
+        let patch_bytes = runtime
+            .handle_event(delete_node, EventType::Click)
+            .expect("Expected patch buffer on Delete click");
+        let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
+        assert!(batch
+            .patches
+            .iter()
+            .any(|p| matches!(p, Patch::RemoveChild { .. })));
     }
 }
