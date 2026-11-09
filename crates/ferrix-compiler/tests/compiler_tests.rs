@@ -121,3 +121,17 @@ fn test_wave1_primitives_fsx_compilation() {
     assert!(sink_rust.contains("ScrollView::new()"));
     assert!(sink_rust.contains("ActivityIndicator::new()"));
 }
+
+#[test]
+fn test_wave2_primitives_fsx_compilation() {
+    let sink_fsx = include_str!("../../../examples/extended-kitchen-sink.fsx");
+    let sink_rust = compile_fsx_to_rust(sink_fsx, "extended-kitchen-sink.fsx")
+        .expect("Failed to compile extended kitchen sink");
+    assert!(sink_rust.contains("pub fn ExtendedKitchenSink"));
+    assert!(sink_rust.contains("Divider::new()"));
+    assert!(sink_rust.contains("Checkbox::new()"));
+    assert!(sink_rust.contains("Slider::new()"));
+    assert!(sink_rust.contains("ProgressBar::new()"));
+    assert!(sink_rust.contains("Badge::new()"));
+    assert!(sink_rust.contains("Icon::new()"));
+}

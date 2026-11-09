@@ -22,9 +22,11 @@ import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
 import androidx.collection.LongSparseArray
@@ -575,6 +577,31 @@ class FerrixRenderer(
                         is Property.ProgressBackgroundColor -> {
                             (view as? SwipeRefreshLayout)?.setProgressBackgroundColorSchemeColor(prop.color)
                         }
+
+                        // Wave 2 Extensions: Inputs, Overlays, Gradients, Media
+                        is Property.Checked -> (view as? CompoundButton)?.isChecked = prop.checked
+                        is Property.SliderValue -> (view as? SeekBar)?.progress = (prop.value * 1000).toInt()
+                        is Property.SliderRange -> {}
+                        is Property.Progress -> (view as? ProgressBar)?.progress = (prop.progress * 100).toInt()
+                        is Property.GradientColors -> {
+                            val gradient = GradientDrawable(
+                                GradientDrawable.Orientation.LEFT_RIGHT,
+                                intArrayOf(prop.startColor, prop.endColor)
+                            )
+                            view.background = gradient
+                        }
+                        is Property.IconName -> (view as? ImageView)?.tag = prop.name
+                        is Property.IconSize -> {
+                            (view as? ImageView)?.let { iv ->
+                                val px = (prop.size * density).toInt()
+                                val lp = iv.layoutParams ?: ViewGroup.LayoutParams(px, px)
+                                lp.width = px
+                                lp.height = px
+                                iv.layoutParams = lp
+                            }
+                        }
+                        is Property.BadgeContent -> (view as? TextView)?.text = prop.content
+                        is Property.GridColumns -> (view as? GridLayout)?.columnCount = prop.columns
                     }
                 }
                 is Patch.SetVisibility -> {
@@ -665,6 +692,20 @@ class FerrixRenderer(
                             (view as? SwipeRefreshLayout)?.setOnRefreshListener {
                                 eventDispatcher(patch.nodeId, EventType.REFRESH, null)
                             }
+                        }
+                        EventType.SLIDER_CHANGE -> {
+                            (view as? SeekBar)?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                                    if (fromUser) {
+                                        val normVal = progress / 1000f
+                                        val payload = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN)
+                                            .putFloat(normVal).array()
+                                        eventDispatcher(patch.nodeId, EventType.SLIDER_CHANGE, payload)
+                                    }
+                                }
+                                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                            })
                         }
                         else -> {}
                     }

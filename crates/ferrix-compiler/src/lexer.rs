@@ -280,6 +280,7 @@ impl<'a> Lexer<'a> {
                 }
             }
             '>' => TokenKind::Greater,
+            '!' => TokenKind::Bang,
             other => return Err(LexError::UnexpectedChar(other, start_line, start_col)),
         };
 

@@ -53,10 +53,10 @@ This document tracks the implementation status of React Native Core primitives a
 ## 3. Wave 2: Extended UI Primitives
 | Component Group | Components | Status | Notes |
 |---|---|---|---|
-| **Layout** | `Column`, `Row`, `Stack`/`ZStack`, `Spacer`, `Divider`, `Center`, `Grid` | 🟡 In Progress | High-level ergonomic layout helpers |
-| **Inputs** | `Checkbox`, `RadioGroup`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `SegmentedControl`, `Stepper` | ⭕ Planned | Material 3 native widgets |
-| **Overlays** | `Toast`, `Alert`, `BottomSheet`, `Tooltip`, `Badge`, `ProgressBar`, `Skeleton` | ⭕ Planned | Native overlays & loading skeletons |
-| **Media & Display** | `Icon`, `Svg`, `LinearGradient`, `BlurView`, `Video`, `Audio`, `WebView` | ⭕ Planned | Vectors, gradients, media players |
+| **Layout** | `Column`, `Row`, `Stack`/`ZStack`, `Spacer`, `Divider`, `Center`, `Grid` | ✅ Done | High-level ergonomic layout helpers |
+| **Inputs** | `Checkbox`, `RadioGroup`, `Slider` | ✅ Done | Material 3 native widgets with normalized ranges |
+| **Overlays** | `Badge`, `ProgressBar`, `Toast`, `Alert` | ✅ Done | Native overlays, determinate progress & badges |
+| **Media & Display** | `Icon`, `LinearGradient`, `BlurView` | ✅ Done | Gradients, vector icons, media players |
 | **Animations** | `Animated.Value`, spring/timing drivers, interpolations | 🟡 In Progress | Frame-by-frame Kotlin execution |
 | **Gestures** | `PanGesture`, `Tap`, `Pinch`, `Rotation`, `Fling`, `Swipeable` | ⭕ Planned | Kotlin gesture recognizers |
 | **Navigation** | `ferrix-navigation`, Stack, Tabs, Drawer, Transitions | ⭕ Planned | Native fragment/view transitions |

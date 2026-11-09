@@ -114,6 +114,11 @@ pub enum Expr {
         right: Box<Expr>,
         span: Span,
     },
+    Unary {
+        op: UnaryOp,
+        expr: Box<Expr>,
+        span: Span,
+    },
 }
 
 impl Expr {
@@ -127,9 +132,16 @@ impl Expr {
             | Self::Member(_, _, s)
             | Self::Call(_, _, s)
             | Self::ArrowFn { span: s, .. }
-            | Self::Binary { span: s, .. } => *s,
+            | Self::Binary { span: s, .. }
+            | Self::Unary { span: s, .. } => *s,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UnaryOp {
+    Not,
+    Neg,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

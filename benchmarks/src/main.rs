@@ -191,7 +191,11 @@ fn bench_wave1_virtualized_and_controlled_throughput() {
             .controlled_text(current_version, format!("Typing keystroke {}", i))
             .build(&allocator);
         let patches = diff_elements(&old_input, &new_input);
-        assert_eq!(patches.len(), 1, "Each keystroke must produce exactly 1 patch");
+        assert_eq!(
+            patches.len(),
+            1,
+            "Each keystroke must produce exactly 1 patch"
+        );
         old_input = new_input;
     }
     let elapsed = start.elapsed();

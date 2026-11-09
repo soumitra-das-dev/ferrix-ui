@@ -63,6 +63,7 @@ pub enum TokenKind {
     Minus, // -
     Star,  // *
     Slash, // /
+    Bang,  // !
 
     Eof,
 }

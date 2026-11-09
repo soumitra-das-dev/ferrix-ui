@@ -270,6 +270,33 @@ object CommandDecoder {
                         65 -> Property.ModalTransparent(buf.get() != 0.toByte())
                         66 -> Property.Refreshing(buf.get() != 0.toByte())
                         67 -> Property.ProgressBackgroundColor(buf.int)
+                        68 -> Property.Checked(buf.get() != 0.toByte())
+                        69 -> Property.SliderValue(buf.float)
+                        70 -> {
+                            val min = buf.float
+                            val max = buf.float
+                            val step = buf.float
+                            Property.SliderRange(min, max, step)
+                        }
+                        71 -> Property.Progress(buf.float)
+                        72 -> {
+                            val startColor = buf.int
+                            val endColor = buf.int
+                            val angle = buf.float
+                            Property.GradientColors(startColor, endColor, angle)
+                        }
+                        73 -> {
+                            val b = ByteArray(valLen)
+                            buf.get(b)
+                            Property.IconName(String(b, StandardCharsets.UTF_8))
+                        }
+                        74 -> Property.IconSize(buf.float)
+                        75 -> {
+                            val b = ByteArray(valLen)
+                            buf.get(b)
+                            Property.BadgeContent(String(b, StandardCharsets.UTF_8))
+                        }
+                        76 -> Property.GridColumns(buf.int)
                         else -> {
                             buf.position(buf.position() + valLen)
                             null

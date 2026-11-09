@@ -1946,3 +1946,617 @@ pub fn use_safe_area_insets() -> EdgeInsets {
         left: 0.0,
     }
 }
+
+/// Overlay layout container stacking children along the Z-axis.
+#[derive(Clone, Debug)]
+pub struct Stack {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Stack {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Stack {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::Stack),
+        }
+    }
+
+    pub fn style(mut self, style: &Style) -> Self {
+        self.def.props.extend(style.to_properties());
+        self
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<ElementDef>>) -> Self {
+        for child in children {
+            self.def.children.push(child.into());
+        }
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Stack> for ElementDef {
+    fn from(val: Stack) -> Self {
+        val.def
+    }
+}
+
+pub type ZStack = Stack;
+
+/// Flexible spacer expanding to fill available space in flex containers.
+#[derive(Clone, Debug)]
+pub struct Spacer {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Spacer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Spacer {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::Spacer),
+        }
+    }
+
+    pub fn size(mut self, size: f32) -> Self {
+        self.def.props.push(Property::Spacing(size));
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Spacer> for ElementDef {
+    fn from(val: Spacer) -> Self {
+        val.def
+    }
+}
+
+/// Visual line separator between elements.
+#[derive(Clone, Debug)]
+pub struct Divider {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Divider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Divider {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::Divider),
+        }
+    }
+
+    pub fn color(mut self, color: u32) -> Self {
+        self.def.props.push(Property::BackgroundColor(color));
+        self
+    }
+
+    pub fn thickness(mut self, thickness: f32) -> Self {
+        self.def.props.push(Property::BorderWidth {
+            left: 0.0,
+            top: 0.0,
+            right: 0.0,
+            bottom: thickness,
+        });
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Divider> for ElementDef {
+    fn from(val: Divider) -> Self {
+        val.def
+    }
+}
+
+/// Center layout container that centers its child along both axes.
+#[derive(Clone, Debug)]
+pub struct Center {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Center {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Center {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::Center),
+        }
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Center> for ElementDef {
+    fn from(val: Center) -> Self {
+        val.def
+    }
+}
+
+/// Multi-column grid container.
+#[derive(Clone, Debug)]
+pub struct Grid {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Grid {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Grid {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::Grid),
+        }
+    }
+
+    pub fn columns(mut self, cols: u32) -> Self {
+        self.def.props.push(Property::GridColumns(cols));
+        self
+    }
+
+    pub fn spacing(mut self, s: f32) -> Self {
+        self.def.props.push(Property::Spacing(s));
+        self
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<ElementDef>>) -> Self {
+        for child in children {
+            self.def.children.push(child.into());
+        }
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Grid> for ElementDef {
+    fn from(val: Grid) -> Self {
+        val.def
+    }
+}
+
+/// Binary checkbox control.
+#[derive(Clone, Debug)]
+pub struct Checkbox {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Checkbox {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Checkbox {
+    pub fn new() -> Self {
+        let mut def = ElementDef::new(ViewType::Checkbox);
+        def.event_listeners.push(EventType::ValueChange);
+        Self { def }
+    }
+
+    pub fn checked(mut self, checked: bool) -> Self {
+        self.def.props.push(Property::Checked(checked));
+        self
+    }
+
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.def.props.push(Property::Enabled(!disabled));
+        self
+    }
+
+    pub fn on_value_change(mut self) -> Self {
+        if !self.def.event_listeners.contains(&EventType::ValueChange) {
+            self.def.event_listeners.push(EventType::ValueChange);
+        }
+        self
+    }
+
+    pub fn test_id(mut self, id: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(id.into()));
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Checkbox> for ElementDef {
+    fn from(val: Checkbox) -> Self {
+        val.def
+    }
+}
+
+/// Continuous or discrete slider control.
+#[derive(Clone, Debug)]
+pub struct Slider {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Slider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Slider {
+    pub fn new() -> Self {
+        let mut def = ElementDef::new(ViewType::Slider);
+        def.event_listeners.push(EventType::SliderChange);
+        Self { def }
+    }
+
+    pub fn value(mut self, val: f32) -> Self {
+        self.def.props.push(Property::SliderValue(val));
+        self
+    }
+
+    pub fn range(mut self, min: f32, max: f32, step: f32) -> Self {
+        self.def
+            .props
+            .push(Property::SliderRange { min, max, step });
+        self
+    }
+
+    pub fn on_slider_change(mut self) -> Self {
+        if !self.def.event_listeners.contains(&EventType::SliderChange) {
+            self.def.event_listeners.push(EventType::SliderChange);
+        }
+        self
+    }
+
+    pub fn test_id(mut self, id: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(id.into()));
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Slider> for ElementDef {
+    fn from(val: Slider) -> Self {
+        val.def
+    }
+}
+
+/// Horizontal progress bar indicator.
+#[derive(Clone, Debug)]
+pub struct ProgressBar {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for ProgressBar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ProgressBar {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::ProgressBar),
+        }
+    }
+
+    pub fn progress(mut self, progress: f32) -> Self {
+        self.def.props.push(Property::Progress(progress));
+        self
+    }
+
+    pub fn color(mut self, color: u32) -> Self {
+        self.def.props.push(Property::IndicatorColor(color));
+        self
+    }
+
+    pub fn test_id(mut self, id: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(id.into()));
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<ProgressBar> for ElementDef {
+    fn from(val: ProgressBar) -> Self {
+        val.def
+    }
+}
+
+/// Small status or counter badge tag.
+#[derive(Clone, Debug)]
+pub struct Badge {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Badge {
+    fn default() -> Self {
+        Self::new("")
+    }
+}
+
+impl Badge {
+    pub fn new(content: impl Into<String>) -> Self {
+        let mut def = ElementDef::new(ViewType::Badge);
+        def.props.push(Property::BadgeContent(content.into()));
+        Self { def }
+    }
+
+    pub fn content(mut self, content: impl Into<String>) -> Self {
+        self.def.props.push(Property::BadgeContent(content.into()));
+        self
+    }
+
+    pub fn background_color(mut self, color: u32) -> Self {
+        self.def.props.push(Property::BackgroundColor(color));
+        self
+    }
+
+    pub fn text_color(mut self, color: u32) -> Self {
+        self.def.props.push(Property::TextColor(color));
+        self
+    }
+
+    pub fn test_id(mut self, id: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(id.into()));
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Badge> for ElementDef {
+    fn from(val: Badge) -> Self {
+        val.def
+    }
+}
+
+/// Smooth linear gradient background container.
+#[derive(Clone, Debug)]
+pub struct LinearGradient {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for LinearGradient {
+    fn default() -> Self {
+        Self::new(0xFF2563EB, 0xFF9333EA)
+    }
+}
+
+impl LinearGradient {
+    pub fn new(start_color: u32, end_color: u32) -> Self {
+        let mut def = ElementDef::new(ViewType::LinearGradient);
+        def.props.push(Property::GradientColors {
+            start_color,
+            end_color,
+            angle_deg: 90.0,
+        });
+        Self { def }
+    }
+
+    pub fn colors(mut self, start_color: u32, end_color: u32) -> Self {
+        self.def.props.push(Property::GradientColors {
+            start_color,
+            end_color,
+            angle_deg: 90.0,
+        });
+        self
+    }
+
+    pub fn angle(mut self, angle_deg: f32) -> Self {
+        if let Some(Property::GradientColors { angle_deg: a, .. }) = self
+            .def
+            .props
+            .iter_mut()
+            .find(|p| matches!(p, Property::GradientColors { .. }))
+        {
+            *a = angle_deg;
+        }
+        self
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<ElementDef>>) -> Self {
+        for child in children {
+            self.def.children.push(child.into());
+        }
+        self
+    }
+
+    pub fn test_id(mut self, id: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(id.into()));
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<LinearGradient> for ElementDef {
+    fn from(val: LinearGradient) -> Self {
+        val.def
+    }
+}
+
+/// Vector icon display element.
+#[derive(Clone, Debug)]
+pub struct Icon {
+    pub(crate) def: ElementDef,
+}
+
+impl Default for Icon {
+    fn default() -> Self {
+        Self::new("help-circle")
+    }
+}
+
+impl Icon {
+    pub fn new(name: impl Into<String>) -> Self {
+        let mut def = ElementDef::new(ViewType::Icon);
+        def.props.push(Property::IconName(name.into()));
+        def.props.push(Property::IconSize(24.0));
+        Self { def }
+    }
+
+    pub fn size(mut self, size: f32) -> Self {
+        self.def.props.push(Property::IconSize(size));
+        self
+    }
+
+    pub fn color(mut self, color: u32) -> Self {
+        self.def.props.push(Property::TintColor(color));
+        self
+    }
+
+    pub fn test_id(mut self, id: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(id.into()));
+        self
+    }
+
+    pub fn key(mut self, key: impl Into<String>) -> Self {
+        self.def.key = Some(key.into());
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl From<Icon> for ElementDef {
+    fn from(val: Icon) -> Self {
+        val.def
+    }
+}

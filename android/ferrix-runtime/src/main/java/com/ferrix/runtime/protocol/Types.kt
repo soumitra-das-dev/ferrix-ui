@@ -20,7 +20,20 @@ enum class ViewType(val value: Short) {
     RECYCLER_VIEW(14),
     SAFE_AREA_VIEW(15),
     REFRESH_CONTROL(16),
-    PORTAL(17);
+    PORTAL(17),
+    STACK(18),
+    SPACER(19),
+    DIVIDER(20),
+    CENTER(21),
+    GRID(22),
+    CHECKBOX(23),
+    RADIO_GROUP(24),
+    SLIDER(25),
+    PICKER(26),
+    PROGRESS_BAR(27),
+    BADGE(28),
+    LINEAR_GRADIENT(29),
+    ICON(30);
 
     companion object {
         fun fromValue(value: Short): ViewType? = entries.firstOrNull { it.value == value }
@@ -57,7 +70,8 @@ enum class EventType(val value: Short) {
     SUBMIT_EDITING(11),
     SELECTION_CHANGE(12),
     REQUEST_CLOSE(13),
-    REFRESH(14);
+    REFRESH(14),
+    SLIDER_CHANGE(15);
 
     companion object {
         fun fromValue(value: Short): EventType? = entries.firstOrNull { it.value == value }
@@ -183,6 +197,17 @@ sealed class Property {
     // RefreshControl
     data class Refreshing(val refreshing: Boolean) : Property()
     data class ProgressBackgroundColor(val color: Int) : Property()
+
+    // Wave 2 Extensions: Inputs, Overlays, Gradients, Media
+    data class Checked(val checked: Boolean) : Property()
+    data class SliderValue(val value: Float) : Property()
+    data class SliderRange(val min: Float, val max: Float, val step: Float) : Property()
+    data class Progress(val progress: Float) : Property()
+    data class GradientColors(val startColor: Int, val endColor: Int, val angleDeg: Float) : Property()
+    data class IconName(val name: String) : Property()
+    data class IconSize(val size: Float) : Property()
+    data class BadgeContent(val content: String) : Property()
+    data class GridColumns(val columns: Int) : Property()
 }
 
 /**

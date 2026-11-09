@@ -294,6 +294,14 @@ impl Codegen {
                 };
                 format!("{} {} {}", left_str, op_str, right_str)
             }
+            Expr::Unary { op, expr, .. } => {
+                let inner = self.expr_to_rust(expr);
+                let op_str = match op {
+                    crate::ast::UnaryOp::Not => "!",
+                    crate::ast::UnaryOp::Neg => "-",
+                };
+                format!("({}{})", op_str, inner)
+            }
         }
     }
 }

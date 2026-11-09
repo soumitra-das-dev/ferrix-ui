@@ -51,6 +51,19 @@ pub enum ViewType {
     SafeAreaView = 15,
     RefreshControl = 16,
     Portal = 17,
+    Stack = 18,
+    Spacer = 19,
+    Divider = 20,
+    Center = 21,
+    Grid = 22,
+    Checkbox = 23,
+    RadioGroup = 24,
+    Slider = 25,
+    Picker = 26,
+    ProgressBar = 27,
+    Badge = 28,
+    LinearGradient = 29,
+    Icon = 30,
 }
 
 impl ViewType {
@@ -59,6 +72,8 @@ impl ViewType {
     /// Aliases for virtualized list
     pub const LAZY_LIST: Self = Self::RecyclerView;
     pub const FLAT_LIST: Self = Self::RecyclerView;
+    /// Aliases for Stack
+    pub const Z_STACK: Self = Self::Stack;
 
     pub fn from_u16(val: u16) -> Option<Self> {
         match val {
@@ -79,6 +94,19 @@ impl ViewType {
             15 => Some(Self::SafeAreaView),
             16 => Some(Self::RefreshControl),
             17 => Some(Self::Portal),
+            18 => Some(Self::Stack),
+            19 => Some(Self::Spacer),
+            20 => Some(Self::Divider),
+            21 => Some(Self::Center),
+            22 => Some(Self::Grid),
+            23 => Some(Self::Checkbox),
+            24 => Some(Self::RadioGroup),
+            25 => Some(Self::Slider),
+            26 => Some(Self::Picker),
+            27 => Some(Self::ProgressBar),
+            28 => Some(Self::Badge),
+            29 => Some(Self::LinearGradient),
+            30 => Some(Self::Icon),
             _ => None,
         }
     }
@@ -238,6 +266,24 @@ pub enum Property {
     // RefreshControl
     Refreshing(bool),
     ProgressBackgroundColor(u32),
+    // Wave 2 Extensions: Inputs, Overlays, Gradients, Media
+    Checked(bool),
+    SliderValue(f32),
+    SliderRange {
+        min: f32,
+        max: f32,
+        step: f32,
+    },
+    Progress(f32),
+    GradientColors {
+        start_color: u32,
+        end_color: u32,
+        angle_deg: f32,
+    },
+    IconName(String),
+    IconSize(f32),
+    BadgeContent(String),
+    GridColumns(u32),
 }
 
 impl Property {
@@ -310,6 +356,15 @@ impl Property {
             Self::ModalTransparent(_) => 65,
             Self::Refreshing(_) => 66,
             Self::ProgressBackgroundColor(_) => 67,
+            Self::Checked(_) => 68,
+            Self::SliderValue(_) => 69,
+            Self::SliderRange { .. } => 70,
+            Self::Progress(_) => 71,
+            Self::GradientColors { .. } => 72,
+            Self::IconName(_) => 73,
+            Self::IconSize(_) => 74,
+            Self::BadgeContent(_) => 75,
+            Self::GridColumns(_) => 76,
         }
     }
 }
@@ -368,6 +423,7 @@ pub enum EventType {
     SelectionChange = 12,
     RequestClose = 13,
     Refresh = 14,
+    SliderChange = 15,
 }
 
 impl EventType {
@@ -387,6 +443,7 @@ impl EventType {
             12 => Some(Self::SelectionChange),
             13 => Some(Self::RequestClose),
             14 => Some(Self::Refresh),
+            15 => Some(Self::SliderChange),
             _ => None,
         }
     }
@@ -770,6 +827,41 @@ impl PatchBatch {
                             payload.extend_from_slice(&(8u16).to_le_bytes());
                             payload.extend_from_slice(&active.to_le_bytes());
                             payload.extend_from_slice(&inactive.to_le_bytes());
+                        }
+                        Property::Checked(b) => {
+                            payload.extend_from_slice(&(1u16).to_le_bytes());
+                            payload.push(if *b { 1 } else { 0 });
+                        }
+                        Property::SliderValue(f)
+                        | Property::Progress(f)
+                        | Property::IconSize(f) => {
+                            payload.extend_from_slice(&(4u16).to_le_bytes());
+                            payload.extend_from_slice(&f.to_le_bytes());
+                        }
+                        Property::SliderRange { min, max, step } => {
+                            payload.extend_from_slice(&(12u16).to_le_bytes());
+                            payload.extend_from_slice(&min.to_le_bytes());
+                            payload.extend_from_slice(&max.to_le_bytes());
+                            payload.extend_from_slice(&step.to_le_bytes());
+                        }
+                        Property::GradientColors {
+                            start_color,
+                            end_color,
+                            angle_deg,
+                        } => {
+                            payload.extend_from_slice(&(12u16).to_le_bytes());
+                            payload.extend_from_slice(&start_color.to_le_bytes());
+                            payload.extend_from_slice(&end_color.to_le_bytes());
+                            payload.extend_from_slice(&angle_deg.to_le_bytes());
+                        }
+                        Property::IconName(s) | Property::BadgeContent(s) => {
+                            let bytes = s.as_bytes();
+                            payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                            payload.extend_from_slice(bytes);
+                        }
+                        Property::GridColumns(u) => {
+                            payload.extend_from_slice(&(4u16).to_le_bytes());
+                            payload.extend_from_slice(&u.to_le_bytes());
                         }
                     }
                 }
@@ -1467,6 +1559,80 @@ impl PatchBatch {
                         ),
                         66 => Property::Refreshing(prop_slice.first().copied().unwrap_or(0) != 0),
                         67 => Property::ProgressBackgroundColor(u32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
+                        68 => Property::Checked(prop_slice.first().copied().unwrap_or(0) != 0),
+                        69 => Property::SliderValue(f32::from_le_bytes(
+                            prop_slice
+                                .try_into()
+                                .map_err(|_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                })?,
+                        )),
+                        70 => {
+                            if prop_slice.len() < 12 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 12,
+                                });
+                            }
+                            let min = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let max = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            let step = f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
+                            Property::SliderRange { min, max, step }
+                        }
+                        71 => {
+                            Property::Progress(f32::from_le_bytes(prop_slice.try_into().map_err(
+                                |_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                },
+                            )?))
+                        }
+                        72 => {
+                            if prop_slice.len() < 12 {
+                                return Err(ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 12,
+                                });
+                            }
+                            let start_color =
+                                u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                            let end_color =
+                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                            let angle_deg =
+                                f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
+                            Property::GradientColors {
+                                start_color,
+                                end_color,
+                                angle_deg,
+                            }
+                        }
+                        73 => Property::IconName(
+                            std::str::from_utf8(prop_slice)
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string(),
+                        ),
+                        74 => {
+                            Property::IconSize(f32::from_le_bytes(prop_slice.try_into().map_err(
+                                |_| ProtocolError::UnexpectedEof {
+                                    offset,
+                                    expected: 4,
+                                },
+                            )?))
+                        }
+                        75 => Property::BadgeContent(
+                            std::str::from_utf8(prop_slice)
+                                .map_err(|_| ProtocolError::InvalidUtf8)?
+                                .to_string(),
+                        ),
+                        76 => Property::GridColumns(u32::from_le_bytes(
                             prop_slice
                                 .try_into()
                                 .map_err(|_| ProtocolError::UnexpectedEof {
@@ -2272,6 +2438,69 @@ mod tests {
 
         let encoded = batch.encode();
         let decoded = PatchBatch::decode(&encoded).expect("failed to decode wave 1 patch batch");
+        assert_eq!(batch, decoded);
+    }
+
+    #[test]
+    fn test_wave2_properties_round_trip() {
+        let mut batch = PatchBatch::new();
+        let node = NodeId(600);
+
+        batch.push(Patch::CreateNode {
+            node_id: node,
+            view_type: ViewType::Slider,
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Checked(true),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::SliderValue(0.75),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::SliderRange {
+                min: 0.0,
+                max: 1.0,
+                step: 0.05,
+            },
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::Progress(0.65),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::GradientColors {
+                start_color: 0xFF2563EB,
+                end_color: 0xFF9333EA,
+                angle_deg: 90.0,
+            },
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::IconName("check-circle".to_string()),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::IconSize(24.0),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::BadgeContent("NEW".to_string()),
+        });
+        batch.push(Patch::SetProperty {
+            node_id: node,
+            property: Property::GridColumns(3),
+        });
+        batch.push(Patch::AttachEventListener {
+            node_id: node,
+            event_type: EventType::SliderChange,
+        });
+
+        let encoded = batch.encode();
+        let decoded = PatchBatch::decode(&encoded).expect("failed to decode wave 2 patch batch");
         assert_eq!(batch, decoded);
     }
 }

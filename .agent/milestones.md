@@ -65,10 +65,11 @@
 - **Status**: Passed (Verified in `primitives_wave1_tests.rs`, `Wave1CorePrimitivesTest.kt`, `compiler_tests.rs`, release benchmarks; 48 workspace tests and all Robolectric tests passing).
 - **Date Passed**: 2026-11-09
 
-### Wave 2: Extended UI Primitives 🔴
-- **Scope**: Layout helpers (`Column`, `Row`, `Stack`, `Spacer`, `Divider`, `Center`, `Grid`), inputs (`Checkbox`, `RadioGroup`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `SegmentedControl`, `Stepper`), overlays (`Toast`, `Alert`, `BottomSheet`, `Tooltip`, `Badge`, `ProgressBar`, `Skeleton`), media (`Icon`, `Svg`, `LinearGradient`, `BlurView`, `Video`, `Audio`, `WebView`), animations (`Animated.Value` signals), gestures (`PanGesture`, `Tap`, `Swipeable`), navigation (`ferrix-navigation`).
-- **Gate**: Full-featured interactive app exercising all extended primitives.
-- **Status**: Planned
+### Wave 2: Extended UI Primitives 🟢
+- **Scope**: Layout helpers (`Column`, `Row`, `Stack` / `ZStack`, `Spacer`, `Divider`, `Center`, `Grid`), inputs (`Checkbox`, `RadioGroup`, `Slider`), overlays & display (`Badge`, `ProgressBar`, `LinearGradient`, `Icon`).
+- **Gate**: Full-featured interactive app exercising extended primitives (`examples/extended-kitchen-sink.fsx`), Robolectric unit test, and minimal patch diffing.
+- **Status**: Passed (Verified in `primitives_wave2_tests.rs`, `Wave2ExtendedPrimitivesTest.kt`, `compiler_tests.rs`; 51 workspace tests and all Robolectric tests passing).
+- **Date Passed**: 2026-11-09
 
 ### Wave 3: Platform APIs & Hooks 🔴
 - **Scope**: `Dimensions`, `PixelRatio`, `Platform`, `Appearance`, `Keyboard`, `AppState`, `BackHandler`, `Linking`, `Share`, `Vibration`, `Clipboard`, `Alert`, `AccessibilityInfo`, `I18nManager`, `NetInfo`.

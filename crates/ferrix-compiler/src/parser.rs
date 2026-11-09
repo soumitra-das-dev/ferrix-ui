@@ -663,6 +663,17 @@ impl<'a> Parser<'a> {
                 self.advance()?;
                 Ok(Expr::Bool(false, span))
             }
+            TokenKind::Bang => {
+                self.advance()?;
+                let inner = self.parse_primary_or_postfix()?;
+                let end_span = inner.span();
+                let full_span = Span::new(span.start, end_span.end, span.line, span.col);
+                Ok(Expr::Unary {
+                    op: UnaryOp::Not,
+                    expr: Box::new(inner),
+                    span: full_span,
+                })
+            }
             TokenKind::OpenParen => {
                 self.advance()?; // consume '('
                 if self.current.kind == TokenKind::CloseParen {
