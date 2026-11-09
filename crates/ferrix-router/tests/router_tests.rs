@@ -193,3 +193,28 @@ fn test_deep_linking_schemes() {
     let path_univ = parse_deep_link("https://app.example.com/checkout/step2", "myapp").unwrap();
     assert_eq!(path_univ, "/checkout/step2");
 }
+
+#[test]
+fn test_router_error_escalation_and_handling() {
+    let files = vec!["app/index.fsx", "app/dashboard.fsx", "app/+error.fsx"];
+    let manifest = RouteManifest::scan_virtual_dir(&files).expect("Scan failed");
+    let router = RouterState::new(manifest, "/dashboard");
+
+    assert_eq!(router.current_pathname(), "/dashboard");
+    assert!(!router.is_error());
+
+    // Trigger an error in route logic
+    router.trigger_error("Network timeout while fetching user records");
+
+    assert!(router.is_error());
+    assert_eq!(router.current_pathname(), "/dashboard/+error");
+    assert_eq!(
+        router.local_params().get("error").map(|s| s.as_str()),
+        Some("Network timeout while fetching user records")
+    );
+
+    // Popping restores previous screen
+    assert!(router.back());
+    assert_eq!(router.current_pathname(), "/dashboard");
+    assert!(!router.is_error());
+}

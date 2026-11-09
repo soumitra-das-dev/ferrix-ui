@@ -152,6 +152,32 @@ impl RouterState {
         self.push(href);
     }
 
+    /// Triggers an error escalation, pushing the matching `+error` screen onto the stack.
+    pub fn trigger_error(&self, error_message: &str) {
+        let mut inner = self.inner.borrow_mut();
+        let current_path = inner
+            .stack
+            .last()
+            .map(|m| m.pathname.clone())
+            .unwrap_or_else(|| "/".to_string());
+        let matched = inner
+            .manifest
+            .match_error_route(&current_path, error_message);
+        inner.stack.push(matched);
+        drop(inner);
+        self.sync_signals();
+    }
+
+    /// Returns whether the active top screen is an error screen.
+    pub fn is_error(&self) -> bool {
+        self.inner
+            .borrow()
+            .stack
+            .last()
+            .map(|m| m.route.is_error)
+            .unwrap_or(false)
+    }
+
     /// Reactive signal for the current pathname.
     pub fn pathname_signal(&self) -> Signal<String> {
         self.pathname_signal.clone()
@@ -167,9 +193,19 @@ impl RouterState {
         self.local_params_signal.clone()
     }
 
+    /// Convenience snapshot of current local route params.
+    pub fn local_params(&self) -> HashMap<String, String> {
+        self.local_params_signal.get()
+    }
+
     /// Reactive signal for global query parameters.
     pub fn global_params_signal(&self) -> Signal<HashMap<String, String>> {
         self.global_params_signal.clone()
+    }
+
+    /// Convenience snapshot of current global query params.
+    pub fn global_params(&self) -> HashMap<String, String> {
+        self.global_params_signal.get()
     }
 
     /// Reactive signal indicating whether the current screen is focused.

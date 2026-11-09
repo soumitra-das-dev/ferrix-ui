@@ -21,6 +21,8 @@ sealed class PlatformRequest {
     object ExitApp : PlatformRequest()
     object DismissKeyboard : PlatformRequest()
     data class AnnounceAccessibility(val message: String) : PlatformRequest()
+    data class ScheduleBackgroundTask(val taskId: String, val delayMs: Long, val isPeriodic: Boolean, val intervalMs: Long) : PlatformRequest()
+    data class CancelBackgroundTask(val taskId: String) : PlatformRequest()
 
     companion object {
         fun decode(buffer: ByteBuffer): PlatformRequest {
@@ -118,6 +120,22 @@ sealed class PlatformRequest {
                     buffer.get(bytes)
                     AnnounceAccessibility(String(bytes, Charsets.UTF_8))
                 }
+                18 -> {
+                    val idLen = buffer.int
+                    val idBytes = ByteArray(idLen)
+                    buffer.get(idBytes)
+                    val taskId = String(idBytes, Charsets.UTF_8)
+                    val delayMs = buffer.long
+                    val isPeriodic = buffer.get() != 0.toByte()
+                    val intervalMs = buffer.long
+                    ScheduleBackgroundTask(taskId, delayMs, isPeriodic, intervalMs)
+                }
+                19 -> {
+                    val idLen = buffer.int
+                    val idBytes = ByteArray(idLen)
+                    buffer.get(idBytes)
+                    CancelBackgroundTask(String(idBytes, Charsets.UTF_8))
+                }
                 else -> throw IllegalArgumentException("Unknown PlatformRequest tag: $tag")
             }
         }
@@ -137,6 +155,7 @@ sealed class PlatformResponse {
     data class KeyboardChange(val isVisible: Boolean, val heightDp: Float) : PlatformResponse()
     data class DimensionsChange(val width: Float, val height: Float, val scale: Float, val fontScale: Float) : PlatformResponse()
     object BackPressed : PlatformResponse()
+    data class BackgroundTaskCompleted(val taskId: String, val success: Boolean) : PlatformResponse()
 
     fun encode(): ByteArray {
         val buffer = ByteBuffer.allocate(2048).order(ByteOrder.LITTLE_ENDIAN)
@@ -221,6 +240,13 @@ sealed class PlatformResponse {
             }
             is BackPressed -> {
                 buffer.putShort(12)
+            }
+            is BackgroundTaskCompleted -> {
+                buffer.putShort(13)
+                val idBytes = taskId.toByteArray(Charsets.UTF_8)
+                buffer.putInt(idBytes.size)
+                buffer.put(idBytes)
+                buffer.put(if (success) 1.toByte() else 0.toByte())
             }
         }
         buffer.flip()
@@ -313,6 +339,14 @@ sealed class PlatformResponse {
                     DimensionsChange(width, height, scale, fontScale)
                 }
                 12 -> BackPressed
+                13 -> {
+                    val idLen = buffer.int
+                    val idBytes = ByteArray(idLen)
+                    buffer.get(idBytes)
+                    val taskId = String(idBytes, Charsets.UTF_8)
+                    val success = buffer.get() != 0.toByte()
+                    BackgroundTaskCompleted(taskId, success)
+                }
                 else -> throw IllegalArgumentException("Unknown PlatformResponse tag: $tag")
             }
         }

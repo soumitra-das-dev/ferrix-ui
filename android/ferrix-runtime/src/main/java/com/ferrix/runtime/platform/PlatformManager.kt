@@ -23,6 +23,7 @@ class PlatformManager(val context: Context) {
     val locationAdapter = LocationAdapter(context)
     val cameraAdapter = CameraAdapter(context)
     val storageAdapter = StorageAdapter(context)
+    val scheduledTasks = mutableSetOf<String>()
 
     /**
      * Processes an inbound binary platform request buffer from Rust.
@@ -144,6 +145,12 @@ class PlatformManager(val context: Context) {
                 val view = (context as? Activity)?.window?.decorView ?: View(context)
                 view.announceForAccessibility(request.message)
             }
+            is PlatformRequest.ScheduleBackgroundTask -> {
+                scheduledTasks.add(request.taskId)
+            }
+            is PlatformRequest.CancelBackgroundTask -> {
+                scheduledTasks.remove(request.taskId)
+            }
         }
     }
 
@@ -168,6 +175,15 @@ class PlatformManager(val context: Context) {
      */
     fun sendAppState(state: Byte, onResponse: (ByteArray) -> Unit) {
         val resp = PlatformResponse.AppStateChange(state)
+        onResponse(resp.encode())
+    }
+
+    /**
+     * Reports background task completion to Rust.
+     */
+    fun completeBackgroundTask(taskId: String, success: Boolean, onResponse: (ByteArray) -> Unit) {
+        scheduledTasks.remove(taskId)
+        val resp = PlatformResponse.BackgroundTaskCompleted(taskId, success)
         onResponse(resp.encode())
     }
 

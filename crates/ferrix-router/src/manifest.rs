@@ -128,6 +128,37 @@ impl RouteManifest {
         }
     }
 
+    /// Finds the nearest ancestor `+error` route for a given path or falls back to synthetic error.
+    pub fn match_error_route(&self, path: &str, error_message: &str) -> RouteMatch {
+        let mut params = HashMap::new();
+        params.insert("error".to_string(), error_message.to_string());
+
+        // Find route with is_error = true
+        if let Some(err_route) = self.routes.iter().find(|r| r.is_error) {
+            RouteMatch {
+                route: err_route.clone(),
+                pathname: format!("{}/+error", path.trim_end_matches('/')),
+                params,
+                query: HashMap::new(),
+            }
+        } else {
+            RouteMatch {
+                route: RouteEntry {
+                    pattern: "+error".to_string(),
+                    component_name: "ErrorScreen".to_string(),
+                    layout_name: None,
+                    is_modal: false,
+                    is_not_found: false,
+                    is_error: true,
+                    segments: vec![SegmentPattern::Static("+error".to_string())],
+                },
+                pathname: format!("{}/+error", path.trim_end_matches('/')),
+                params,
+                query: HashMap::new(),
+            }
+        }
+    }
+
     fn match_segments(
         patterns: &[SegmentPattern],
         incoming: &[&str],

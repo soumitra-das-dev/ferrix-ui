@@ -161,6 +161,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrix-devtools"
+version = "0.1.0"
+dependencies = [
+ "ferrix-core",
+ "ferrix-reactivity",
+ "ferrix-renderer-protocol",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ferrix-fmt"
 version = "0.1.0"
 dependencies = [

@@ -4,6 +4,7 @@
 
 pub mod component;
 pub mod element;
+pub mod error_boundary;
 pub mod handle;
 pub mod node_id;
 pub mod platform;
@@ -15,6 +16,7 @@ pub mod theme;
 
 pub use component::{ComponentContext, State};
 pub use element::{Element, ElementDef};
+pub use error_boundary::{render_with_error_boundary, ErrorInfo};
 pub use handle::ElementHandle;
 pub use node_id::NodeIdAllocator;
 pub use platform::{
@@ -40,6 +42,7 @@ pub use theme::{use_color_scheme, ColorScheme, DynamicColors, I18nManager};
 pub mod prelude {
     pub use crate::component::{ComponentContext, State};
     pub use crate::element::{Element, ElementDef};
+    pub use crate::error_boundary::{render_with_error_boundary, ErrorInfo};
     pub use crate::handle::ElementHandle;
     pub use crate::node_id::NodeIdAllocator;
     pub use crate::platform::{
