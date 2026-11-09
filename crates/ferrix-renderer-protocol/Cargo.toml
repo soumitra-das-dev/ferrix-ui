@@ -1,0 +1,9 @@
+[package]
+name = "ferrix-renderer-protocol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Typed binary UI patch protocol between Ferrix Rust runtime and platform renderers"
+
+[dependencies]
+thiserror = { workspace = true }

@@ -1,0 +1,13 @@
+[package]
+name = "ferrix-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Command line interface for Ferrix build system and compiler"
+
+[dependencies]
+ferrix-compiler = { path = "../ferrix-compiler" }
+
+[[bin]]
+name = "ferrix"
+path = "src/main.rs"

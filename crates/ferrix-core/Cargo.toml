@@ -1,0 +1,12 @@
+[package]
+name = "ferrix-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Components, hooks, lifecycle, and reconciliation for Ferrix"
+
+[dependencies]
+ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
+ferrix-reactivity = { path = "../ferrix-reactivity" }
+ferrix-layout = { path = "../ferrix-layout" }
+tracing = { workspace = true }

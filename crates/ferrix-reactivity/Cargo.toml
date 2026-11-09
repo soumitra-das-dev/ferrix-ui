@@ -1,0 +1,8 @@
+[package]
+name = "ferrix-reactivity"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Signals, dependency graph, and batching runtime for Ferrix"
+
+[dependencies]
