@@ -16,3 +16,16 @@
   3. Custom compact binary packed buffer transmitted via `java.nio.ByteBuffer.allocateDirect` / raw memory pointer with batched opcodes and payloads.
 - **Decision**: Option 3. Packed binary command buffer (opcode `u8`, target `u64`, length-prefixed values) decoded in Kotlin using zero-copy `ByteBuffer`.
 - **Consequences**: Zero JNI overhead per property, zero string serialization overhead, minimal memory allocations, deterministic decoding order.
+
+### 2026-11-09 ADR-0003: Text Measurement Contract
+- **Context**: Taffy computes layout geometry ahead of view creation in Rust. Calculating flexbox layout for text nodes requires intrinsic content size `(width, height)` given width constraints.
+- **Options**:
+  1. *Rust-side text shaping (e.g. cosmic-text, fontdue, rustybuzz)*: Does layout completely within Rust without cross-language calls, but cannot access OEM fonts, dynamic system font scale, Android typography fallback chains, or locale-specific line-breaking without bundling heavy font files and duplicating Android typography logic.
+  2. *Synchronous per-node JNI calls to Android `StaticLayout`*: Guarantees 100% Android typography fidelity, but causes unacceptable per-node JNI chatter and overhead.
+  3. *Hybrid Batched Native Measure Cache*: Rust maintains an in-memory LRU cache of text measurement results keyed by `(hash(text), font_size_sp, font_weight, font_style, max_width, font_scale)`. Uncached text metrics are collected in a single batch query sent to Kotlin's `StaticLayout` / `TextPaint` engine via JNI before running the Taffy layout pass, or predicted using calibrated font metrics with lazy verification.
+- **Decision**: Option 3. Hybrid Batched Native Measure Cache. Zero per-node JNI chatter. Rust caches intrinsic dimensions; whenever text content or typography styling changes, unmeasured text entries are batched together and measured via Kotlin's `StaticLayout`.
+- **Consequences**:
+  - Perfect native fidelity: exact line breaking, OEM fonts, and user font scaling respected.
+  - Zero per-node JNI chatter: measure requests are aggregated into a single batch.
+  - Sub-microsecond cached lookups during reactive re-renders when text content is unchanged.
+

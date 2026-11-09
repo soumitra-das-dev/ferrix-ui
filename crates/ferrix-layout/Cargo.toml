@@ -7,3 +7,6 @@ description = "Taffy-based layout engine for Ferrix"
 
 [dependencies]
 taffy = { workspace = true }
+ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
+thiserror = { workspace = true }
+

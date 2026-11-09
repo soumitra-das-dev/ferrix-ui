@@ -1,26 +1,38 @@
 package com.ferrix.runtime
 
 import android.content.Context
+import android.graphics.drawable.RippleDrawable
+import android.util.TypedValue
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.Switch
 import android.widget.TextView
 import androidx.core.widget.NestedScrollView
 import com.ferrix.runtime.protocol.ViewType
 
 /**
- * Factory responsible for instantiating concrete native Android Views for Ferrix nodes.
+ * Factory responsible for instantiating and recycling concrete native Android Views for Ferrix nodes.
  */
-class FerrixViewFactory(private val context: Context) {
+class FerrixViewFactory(
+    private val context: Context,
+    val viewPool: FerrixViewPool = FerrixViewPool()
+) {
 
     fun createView(viewType: ViewType): View {
+        val recycled = viewPool.acquire(viewType)
+        if (recycled != null) {
+            return recycled
+        }
+
         return when (viewType) {
             ViewType.CONTAINER -> FrameLayout(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
                 )
             }
@@ -50,14 +62,65 @@ class FerrixViewFactory(private val context: Context) {
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
             }
-            ViewType.IMAGE -> ImageView(context)
-            ViewType.TEXT_INPUT -> EditText(context)
+            ViewType.IMAGE -> ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            ViewType.TEXT_INPUT -> EditText(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
             ViewType.SCROLL_VIEW -> NestedScrollView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.MATCH_PARENT
                 )
             }
+            ViewType.PRESSABLE -> FrameLayout(context).apply {
+                isClickable = true
+                isFocusable = true
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
+                // Add default selectable ripple background
+                val outValue = TypedValue()
+                context.theme.resolveAttribute(android.R.attr.selectableItemBackground, outValue, true)
+                setBackgroundResource(outValue.resourceId)
+            }
+            ViewType.FRAGMENT -> FrameLayout(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            ViewType.SWITCH -> Switch(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            ViewType.ACTIVITY_INDICATOR -> ProgressBar(context).apply {
+                isIndeterminate = true
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            ViewType.MODAL -> FrameLayout(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
         }
+    }
+
+    fun recycleView(viewType: ViewType, view: View) {
+        viewPool.release(viewType, view)
     }
 }

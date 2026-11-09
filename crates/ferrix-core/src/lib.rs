@@ -4,28 +4,41 @@
 
 pub mod component;
 pub mod element;
+pub mod handle;
 pub mod node_id;
 pub mod platform;
 pub mod primitives;
 pub mod query_hooks;
 pub mod reconcile;
+pub mod style;
+pub mod theme;
 
 pub use component::{ComponentContext, State};
 pub use element::{Element, ElementDef};
+pub use handle::ElementHandle;
 pub use node_id::NodeIdAllocator;
-pub use primitives::{Button, Column, Image, Row, ScrollView, Text, TextInput};
+pub use primitives::{
+    Button, Column, Fragment, Image, Pressable, Row, ScrollView, Text, TextInput, View,
+};
 pub use query_hooks::{use_mutation, use_query, MutationHandle};
 pub use reconcile::{diff_elements, generate_mount_patches};
+pub use style::{Color, Style, StyleSheet};
+pub use theme::{use_color_scheme, ColorScheme, DynamicColors, I18nManager};
 
 pub mod prelude {
     pub use crate::component::{ComponentContext, State};
     pub use crate::element::{Element, ElementDef};
+    pub use crate::handle::ElementHandle;
     pub use crate::node_id::NodeIdAllocator;
-    pub use crate::primitives::{Button, Column, Image, Row, ScrollView, Text, TextInput};
+    pub use crate::primitives::{
+        Button, Column, Fragment, Image, Pressable, Row, ScrollView, Text, TextInput, View,
+    };
     pub use crate::query_hooks::{use_mutation, use_query, MutationHandle};
     pub use crate::reconcile::{diff_elements, generate_mount_patches};
+    pub use crate::style::{Color, Style, StyleSheet};
+    pub use crate::theme::{use_color_scheme, ColorScheme, DynamicColors, I18nManager};
     pub use ferrix_reactivity::prelude::*;
     pub use ferrix_renderer_protocol::{
-        EventType, NodeId, Patch, PatchBatch, Property, ViewType, Visibility,
+        Command, CommandBatch, EventType, NodeId, Patch, PatchBatch, Property, ViewType, Visibility,
     };
 }

@@ -48,3 +48,34 @@
 - **Gate**: Production benchmarks satisfying cold/warm start, APK size, peak memory, P50/P95/P99 frame time, JNI calls, allocations per update.
 - **Status**: Passed (Verified in `ProductionReadyTest`, live on Android 34 emulator with TalkBack attributes and IME typing; state restoration across activity recreation verified; benchmark suite in `benchmarks/` proves 60.6M patches/s encode rate, 52 µs 300-node reconciliation latency, exactly 1 JNI call per interaction, 44.1 MB PSS memory; screenshot in `docs/m7_screen.png`).
 - **Date Passed**: 2026-11-09
+
+---
+
+## Component Library & Platform Modules Roadmap
+
+### Wave 0: Foundations & Cross-Cutting Systems 🟢
+- **Scope**: `StyleSheet` / CSS flexbox system, Taffy 0.7 integration, text measurement contract (ADR-0003), gesture/responder system (`Pressable`), theming (`useColorScheme`, dynamic colors), accessibility prop set, i18n/RTL, refs/imperative handles, view recycling pool.
+- **Gate**: Styled `View` + `Text` with intrinsic size measure from Taffy, `Pressable` pressed-state style & touch events, counter assertion for zero per-node JNI chatter.
+- **Status**: Passed (Verified in `primitives_wave0_tests.rs`, `Wave0FoundationsTest.kt`, `compiler_tests.rs`; 42 Rust tests and all Android Robolectric unit tests passing; ADR-0003 recorded).
+- **Date Passed**: 2026-11-09
+
+### Wave 1: Core Primitives (RN Core Parity) 🟡
+- **Scope**: `View`, `Text`, `Image`, `ImageBackground`, `TextInput` (controlled with version counter), `Pressable`, `Button`, `ScrollView`, `FlatList` / `LazyList` (virtualized list backed by RecyclerView), `SectionList`, `Switch`, `ActivityIndicator`, `Modal`, `StatusBar`, `SafeAreaView`, `KeyboardAvoidingView`, `RefreshControl`, compat touchables (`TouchableOpacity`, `TouchableHighlight`, `TouchableWithoutFeedback`), `Fragment`, `Portal`.
+- **Gate**: `examples/kitchen-sink.fsx`, 10k-item list scrolling with bounded memory and P95 frame time logged, no cursor jump on `TextInput`.
+- **Status**: In Progress
+
+### Wave 2: Extended UI Primitives 🔴
+- **Scope**: Layout helpers (`Column`, `Row`, `Stack`, `Spacer`, `Divider`, `Center`, `Grid`), inputs (`Checkbox`, `RadioGroup`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `SegmentedControl`, `Stepper`), overlays (`Toast`, `Alert`, `BottomSheet`, `Tooltip`, `Badge`, `ProgressBar`, `Skeleton`), media (`Icon`, `Svg`, `LinearGradient`, `BlurView`, `Video`, `Audio`, `WebView`), animations (`Animated.Value` signals), gestures (`PanGesture`, `Tap`, `Swipeable`), navigation (`ferrix-navigation`).
+- **Gate**: Full-featured interactive app exercising all extended primitives.
+- **Status**: Planned
+
+### Wave 3: Platform APIs & Hooks 🔴
+- **Scope**: `Dimensions`, `PixelRatio`, `Platform`, `Appearance`, `Keyboard`, `AppState`, `BackHandler`, `Linking`, `Share`, `Vibration`, `Clipboard`, `Alert`, `AccessibilityInfo`, `I18nManager`, `NetInfo`.
+- **Gate**: Platform API test suite & sample app demonstrating platform hooks.
+- **Status**: Planned
+
+### Wave 4: Expo-Style Native Modules 🔴
+- **Scope**: `ferrix-camera`, `ferrix-location`, `ferrix-sensors`, `ferrix-audio`, `ferrix-haptics`, `ferrix-secure-store`, `ferrix-file-system`, `ferrix-image-picker`, `ferrix-document-picker`, `ferrix-media-library`, `ferrix-notifications`, `ferrix-local-authentication`.
+- **Gate**: Hardware showcase app exercising device modules.
+- **Status**: Planned
+

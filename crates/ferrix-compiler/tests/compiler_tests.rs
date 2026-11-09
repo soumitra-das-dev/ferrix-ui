@@ -81,3 +81,22 @@ export function Invalid(props: Props): Element {
     assert!(err.contains("error[FSX0002]"));
     assert!(err.contains("called after non-hook statements"));
 }
+
+#[test]
+fn test_wave0_primitives_fsx_compilation() {
+    let view_fsx = include_str!("../../../examples/primitives/view.fsx");
+    let view_rust = compile_fsx_to_rust(view_fsx, "view.fsx").expect("Failed to compile view.fsx");
+    assert!(view_rust.contains("pub fn ViewExample"));
+    assert!(view_rust.contains("View::new()"));
+
+    let text_fsx = include_str!("../../../examples/primitives/text.fsx");
+    let text_rust = compile_fsx_to_rust(text_fsx, "text.fsx").expect("Failed to compile text.fsx");
+    assert!(text_rust.contains("pub fn TextExample"));
+    assert!(text_rust.contains("Text::new"));
+
+    let pressable_fsx = include_str!("../../../examples/primitives/pressable.fsx");
+    let pressable_rust = compile_fsx_to_rust(pressable_fsx, "pressable.fsx")
+        .expect("Failed to compile pressable.fsx");
+    assert!(pressable_rust.contains("pub fn PressableExample"));
+    assert!(pressable_rust.contains("Pressable::new()"));
+}

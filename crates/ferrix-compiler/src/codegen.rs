@@ -115,7 +115,24 @@ impl Codegen {
         // Attributes
         for attr in &elem.attributes {
             let val = match &attr.value {
-                AttrValue::Literal(Expr::Int(i, _)) => format!("{:.1}", *i as f64),
+                AttrValue::Literal(Expr::Int(i, _)) => {
+                    if attr.name == "padding"
+                        || attr.name == "spacing"
+                        || attr.name == "size"
+                        || attr.name == "borderRadius"
+                        || attr.name == "elevation"
+                    {
+                        format!("{:.1}", *i as f64)
+                    } else if attr.name == "backgroundColor"
+                        || attr.name == "color"
+                        || attr.name == "textColor"
+                        || attr.name == "rippleColor"
+                    {
+                        format!("0x{:X}", *i as u32)
+                    } else {
+                        format!("{}", i)
+                    }
+                }
                 AttrValue::Literal(Expr::Float(f, _)) => format!("{:.1}", f),
                 AttrValue::Literal(Expr::StringLit(s, _)) => format!("\"{}\"", s),
                 AttrValue::Literal(Expr::Bool(b, _)) => format!("{}", b),
@@ -125,8 +142,19 @@ impl Codegen {
                     continue;
                 }
                 AttrValue::Expr(Expr::Int(i, _)) => {
-                    if attr.name == "padding" || attr.name == "spacing" || attr.name == "size" {
+                    if attr.name == "padding"
+                        || attr.name == "spacing"
+                        || attr.name == "size"
+                        || attr.name == "borderRadius"
+                        || attr.name == "elevation"
+                    {
                         format!("{:.1}", *i as f64)
+                    } else if attr.name == "backgroundColor"
+                        || attr.name == "color"
+                        || attr.name == "textColor"
+                        || attr.name == "rippleColor"
+                    {
+                        format!("0x{:X}", *i as u32)
                     } else {
                         format!("{}", i)
                     }
@@ -142,6 +170,12 @@ impl Codegen {
                 "color" => lines.push(format!(".color({})", val)),
                 "backgroundColor" => lines.push(format!(".background_color({})", val)),
                 "textColor" => lines.push(format!(".text_color({})", val)),
+                "borderRadius" => lines.push(format!(".border_radius({})", val)),
+                "elevation" => lines.push(format!(".elevation({})", val)),
+                "numberOfLines" => lines.push(format!(".number_of_lines({})", val)),
+                "rippleColor" => lines.push(format!(".ripple_color({})", val)),
+                "testID" | "testId" => lines.push(format!(".test_id({})", val)),
+                "accessibilityLabel" => lines.push(format!(".accessibility_label({})", val)),
                 "enabled" => lines.push(format!(".enabled({})", val)),
                 "key" => lines.push(format!(".key({})", val)),
                 other => lines.push(format!(".{}({})", other, val)),

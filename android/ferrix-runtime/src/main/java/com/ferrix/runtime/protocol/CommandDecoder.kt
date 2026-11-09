@@ -5,10 +5,13 @@ import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
 
 /**
- * Decodes packed binary UI patch buffers into typed [Patch] commands.
+ * Decodes packed binary UI patch buffers, imperative command buffers, and text measure buffers.
  */
 object CommandDecoder {
     private const val MAGIC_FXUI = 0x49555846 // "FXUI" in Little-Endian
+    private const val MAGIC_FXCM = 0x4D435846 // "FXCM" in Little-Endian
+    private const val MAGIC_FXTM = 0x4D545846 // "FXTM" in Little-Endian
+    private const val MAGIC_FXTR = 0x52545846 // "FXTR" in Little-Endian
     private const val PROTOCOL_VERSION: Short = 1
 
     const val OP_CREATE_NODE: Byte = 1
@@ -39,7 +42,7 @@ object CommandDecoder {
             throw IllegalArgumentException("Unsupported protocol version: $version")
         }
 
-        buf.short // flags (reserved for future bitflags)
+        buf.short // flags
         val commandCount = buf.int
         val payloadLen = buf.int
 
@@ -149,8 +152,71 @@ object CommandDecoder {
                             buf.get(strBytes)
                             Property.Hint(String(strBytes, StandardCharsets.UTF_8))
                         }
+                        16 -> Property.Opacity(buf.float)
+                        17 -> {
+                            val left = buf.float
+                            val top = buf.float
+                            val right = buf.float
+                            val bottom = buf.float
+                            Property.BorderWidth(left, top, right, bottom)
+                        }
+                        18 -> Property.BorderColor(buf.int)
+                        19 -> {
+                            val tl = buf.float
+                            val tr = buf.float
+                            val br = buf.float
+                            val bl = buf.float
+                            Property.BorderRadius(tl, tr, br, bl)
+                        }
+                        20 -> Property.Elevation(buf.float)
+                        21 -> {
+                            val tx = buf.float
+                            val ty = buf.float
+                            val sx = buf.float
+                            val sy = buf.float
+                            val rot = buf.float
+                            Property.Transform(tx, ty, sx, sy, rot)
+                        }
+                        22 -> Property.FontWeight(buf.short.toInt() and 0xFFFF)
+                        23 -> Property.FontStyle(buf.get().toInt())
+                        24 -> Property.LineHeight(buf.float)
+                        25 -> Property.LetterSpacing(buf.float)
+                        26 -> Property.TextAlign(buf.get().toInt())
+                        27 -> Property.TextDecoration(buf.get().toInt())
+                        28 -> Property.NumberOfLines(buf.int)
+                        29 -> {
+                            val strBytes = ByteArray(valLen)
+                            buf.get(strBytes)
+                            Property.TestId(String(strBytes, StandardCharsets.UTF_8))
+                        }
+                        30 -> {
+                            val strBytes = ByteArray(valLen)
+                            buf.get(strBytes)
+                            Property.AccessibilityLabel(String(strBytes, StandardCharsets.UTF_8))
+                        }
+                        31 -> {
+                            val strBytes = ByteArray(valLen)
+                            buf.get(strBytes)
+                            Property.AccessibilityHint(String(strBytes, StandardCharsets.UTF_8))
+                        }
+                        32 -> {
+                            val dis = buf.get() != 0.toByte()
+                            val sel = buf.get() != 0.toByte()
+                            val chk = buf.get().toInt() and 0xFF
+                            val busy = buf.get() != 0.toByte()
+                            val exp = buf.get().toInt() and 0xFF
+                            Property.AccessibilityState(dis, sel, chk, busy, exp)
+                        }
+                        33 -> Property.ImportantForAccessibility(buf.get().toInt() and 0xFF)
+                        34 -> Property.RippleColor(buf.int)
+                        35 -> {
+                            val left = buf.float
+                            val top = buf.float
+                            val right = buf.float
+                            val bottom = buf.float
+                            Property.HitSlop(left, top, right, bottom)
+                        }
                         else -> {
-                            // Skip unknown property bytes
                             buf.position(buf.position() + valLen)
                             null
                         }
@@ -185,5 +251,86 @@ object CommandDecoder {
         }
 
         return patches
+    }
+
+    /**
+     * Decodes a binary command buffer into a list of [Command]s.
+     */
+    fun decodeCommands(buffer: ByteBuffer): List<Command> {
+        val buf = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
+        if (buf.remaining() < 8) return emptyList()
+
+        val magic = buf.int
+        if (magic != MAGIC_FXCM) {
+            throw IllegalArgumentException("Invalid command magic header: 0x${Integer.toHexString(magic)}")
+        }
+
+        val count = buf.int
+        val commands = ArrayList<Command>(count)
+
+        for (i in 0 until count) {
+            val op = buf.get().toInt()
+            when (op) {
+                1 -> commands.add(Command.FocusNode(buf.long))
+                2 -> commands.add(Command.BlurNode(buf.long))
+                3 -> {
+                    val nodeId = buf.long
+                    val x = buf.float
+                    val y = buf.float
+                    val animated = buf.get() != 0.toByte()
+                    commands.add(Command.ScrollTo(nodeId, x, y, animated))
+                }
+                4 -> commands.add(Command.MeasureNode(buf.long))
+            }
+        }
+        return commands
+    }
+
+    /**
+     * Decodes text measurement requests sent from Rust.
+     */
+    fun decodeTextMeasureRequests(buffer: ByteBuffer): List<TextMeasureRequest> {
+        val buf = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
+        if (buf.remaining() < 8) return emptyList()
+
+        val magic = buf.int
+        if (magic != MAGIC_FXTM) {
+            throw IllegalArgumentException("Invalid text measure magic header: 0x${Integer.toHexString(magic)}")
+        }
+
+        val count = buf.int
+        val requests = ArrayList<TextMeasureRequest>(count)
+
+        for (i in 0 until count) {
+            val reqId = buf.int
+            val fontSize = buf.float
+            val weight = buf.short.toInt() and 0xFFFF
+            val style = buf.get().toInt() and 0xFF
+            val maxWidth = buf.float
+            val textLen = buf.int
+            val textBytes = ByteArray(textLen)
+            buf.get(textBytes)
+            val text = String(textBytes, StandardCharsets.UTF_8)
+
+            requests.add(TextMeasureRequest(reqId, text, fontSize, weight, style, maxWidth))
+        }
+        return requests
+    }
+
+    /**
+     * Encodes text measurement responses to be returned to Rust.
+     */
+    fun encodeTextMeasureResponses(responses: List<TextMeasureResponse>): ByteBuffer {
+        val buf = ByteBuffer.allocateDirect(8 + responses.size * 12).order(ByteOrder.LITTLE_ENDIAN)
+        buf.putInt(MAGIC_FXTR)
+        buf.putInt(responses.size)
+
+        for (resp in responses) {
+            buf.putInt(resp.requestId)
+            buf.putFloat(resp.width)
+            buf.putFloat(resp.height)
+        }
+        buf.flip()
+        return buf
     }
 }

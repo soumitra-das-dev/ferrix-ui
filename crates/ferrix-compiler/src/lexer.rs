@@ -130,8 +130,32 @@ impl<'a> Lexer<'a> {
             return Ok(Token::new(kind, span));
         }
 
-        // Numbers (Integer and Float)
+        // Numbers (Hexadecimal, Integer and Float)
         if c.is_ascii_digit() {
+            if c == '0' && (self.peek_next() == Some('x') || self.peek_next() == Some('X')) {
+                self.advance(); // consume '0'
+                self.advance(); // consume 'x'
+                let mut hex_str = String::new();
+                while let Some(ch) = self.peek() {
+                    if ch.is_ascii_hexdigit() {
+                        hex_str.push(ch);
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+                let end_offset = self
+                    .chars
+                    .get(self.cursor)
+                    .map(|&(idx, _)| idx)
+                    .unwrap_or(self.source.len());
+                let span = Span::new(start_offset, end_offset, start_line, start_col);
+                let val = u64::from_str_radix(&hex_str, 16)
+                    .map_err(|_| LexError::InvalidNumber(start_line, start_col))?
+                    as i64;
+                return Ok(Token::new(TokenKind::Int(val), span));
+            }
+
             let mut num_str = String::new();
             let mut is_float = false;
             while let Some(ch) = self.peek() {
