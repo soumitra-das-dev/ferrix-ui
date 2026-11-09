@@ -46,3 +46,4 @@ class FerrixHeaderView(context: Context) : LinearLayout(context) {
         backButton.visibility = if (visible) VISIBLE else GONE
     }
 }
+

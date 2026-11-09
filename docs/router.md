@@ -59,3 +59,4 @@ pub struct Router {
 - **Intent Filters**: `ferrix.config.toml` specifies custom URI schemes (e.g., `my-app://`) and Android App Link domains (e.g., `https://my-app.com`).
 - **Warm / Cold Start**: When an Android intent arrives, the deep link URL is normalized and matched against the route manifest.
 - **Process Death**: `RouterState::serialize()` saves the full navigation stack to disk/Bundle; `RouterState::restore()` recovers the exact user screen stack on restart.
+

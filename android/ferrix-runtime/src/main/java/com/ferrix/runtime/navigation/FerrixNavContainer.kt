@@ -156,3 +156,4 @@ class FerrixNavContainer(context: Context) : LinearLayout(context) {
         headerView.setBackButtonVisible(stack.size > 1)
     }
 }
+

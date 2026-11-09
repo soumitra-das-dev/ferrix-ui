@@ -31,3 +31,4 @@ Navigation actions are transmitted using typed binary commands over the existing
 - Protocol tests: `test_command_batch_round_trip` in `crates/ferrix-renderer-protocol`.
 - Android Robolectric tests: 3 test cases in `NavigationTest.kt` verifying ViewFactory creation, container stack depth, title updates, back button visibility, and command execution.
 - Full workspace tests: 74 Rust tests passing, all Android Robolectric unit tests passing.
+

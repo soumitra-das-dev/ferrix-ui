@@ -49,3 +49,4 @@ class FerrixTabBarView(context: Context) : LinearLayout(context) {
         }
     }
 }
+

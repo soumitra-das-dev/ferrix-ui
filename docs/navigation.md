@@ -55,3 +55,4 @@ Custom bottom bar with item icons and labels:
 - `StackNavigator`: Stack state machine managing push, pop, replace, and screen options. Emits `CommandBatch` to platform renderer.
 - `TabNavigator`: Tab state machine managing active index and tab bar configuration.
 - Seamless bridge with `ferrix-router`: maps router routes to navigation containers.
+

@@ -69,3 +69,4 @@ flowchart TD
 | **F6** | Lint & Format | CST preservation + formatter idempotency + lint rule suite: `cargo test -p ferrix-fmt -p ferrix-lint` |
 | **F7** | Testing | Headless component tests + query assertions: `cargo test -p ferrix-test` |
 | **F8** | Errors & DevTools | Error boundary fault isolation + dev inspector: `cargo test --workspace` |
+

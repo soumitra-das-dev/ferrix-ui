@@ -20,3 +20,4 @@ export function HomeScreen(): Element {
         </Column>
     );
 }
+

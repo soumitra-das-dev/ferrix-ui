@@ -20,3 +20,4 @@ export function DetailsScreen(): Element {
         </Column>
     );
 }
+

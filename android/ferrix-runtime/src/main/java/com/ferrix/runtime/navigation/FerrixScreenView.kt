@@ -36,3 +36,4 @@ class FerrixScreenView(context: Context) : FrameLayout(context) {
         visibility = GONE
     }
 }
+

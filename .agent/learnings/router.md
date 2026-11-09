@@ -32,3 +32,4 @@ Under Architecture A, the routing system is owned entirely by the Rust runtime. 
 - 8 tests passing in `crates/ferrix-router` (`cargo test -p ferrix-router`).
 - Full workspace tests passing (71 tests across 11 crates).
 - Android test suite passing (`./gradlew testDebugUnitTest`).
+

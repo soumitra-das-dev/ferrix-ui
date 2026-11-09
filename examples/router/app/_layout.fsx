@@ -12,3 +12,4 @@ export function RootLayout(props: { children: Element }): Element {
         </Column>
     );
 }
+

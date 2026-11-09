@@ -10,6 +10,8 @@ members = [
     "crates/ferrix-modules",
     "crates/ferrix-router",
     "crates/ferrix-navigation",
+    "crates/ferrix-storage",
+    "crates/ferrix-sqlite",
     "crates/ferrix-android",
     "crates/ferrix-cli",
     "benchmarks",
