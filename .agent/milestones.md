@@ -7,10 +7,11 @@
 
 ---
 
-### M1: Native Foundation 🟡
+### M1: Native Foundation 🟢
 - **Scope**: Workspace skeleton, Gradle project, Rust→Android cross-compile (`cargo-ndk`), JNI init, bidirectional calls.
 - **Gate**: A native TextView rendered from Rust on an emulator/device with batched command buffer dispatch.
-- **Status**: In Progress
+- **Status**: Passed (Verified on Android 34 emulator & Robolectric JNI tests; text rendered & mutated via button click; evidence in `docs/m1_screen.png`).
+- **Date Passed**: 2026-11-09
 
 ### M2: Element System 🔴
 - **Scope**: `Element`, stable node IDs, props/children, patch protocol (`SetText`, `SetProperty`, `InsertNode`, `RemoveNode`, `SetVisibility`), Kotlin view mapping.
