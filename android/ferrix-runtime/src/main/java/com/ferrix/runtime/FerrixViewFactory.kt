@@ -18,18 +18,46 @@ class FerrixViewFactory(private val context: Context) {
 
     fun createView(viewType: ViewType): View {
         return when (viewType) {
-            ViewType.CONTAINER -> FrameLayout(context)
+            ViewType.CONTAINER -> FrameLayout(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
             ViewType.COLUMN -> LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
             }
             ViewType.ROW -> LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
             }
-            ViewType.TEXT -> TextView(context)
-            ViewType.BUTTON -> Button(context)
+            ViewType.TEXT -> TextView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            ViewType.BUTTON -> Button(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
             ViewType.IMAGE -> ImageView(context)
             ViewType.TEXT_INPUT -> EditText(context)
-            ViewType.SCROLL_VIEW -> NestedScrollView(context)
+            ViewType.SCROLL_VIEW -> NestedScrollView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
         }
     }
 }

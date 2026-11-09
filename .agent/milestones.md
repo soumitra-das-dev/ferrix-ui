@@ -13,10 +13,11 @@
 - **Status**: Passed (Verified on Android 34 emulator & Robolectric JNI tests; text rendered & mutated via button click; evidence in `docs/m1_screen.png`).
 - **Date Passed**: 2026-11-09
 
-### M2: Element System 🔴
+### M2: Element System 🟢
 - **Scope**: `Element`, stable node IDs, props/children, patch protocol (`SetText`, `SetProperty`, `InsertNode`, `RemoveNode`, `SetVisibility`), Kotlin view mapping.
 - **Gate**: Column/Row/Text/Button rendered from Rust.
-- **Status**: Not Started
+- **Status**: Passed (Verified on Android 34 emulator & Robolectric JNI tests; Column, Row, Text, and Button rendered with styling/spacing; interactive Increment/Reset tested; evidence in `docs/m2_screen.png`).
+- **Date Passed**: 2026-11-09
 
 ### M3: Reactive Runtime 🔴
 - **Scope**: Signals, dependency tracking, hooks with instance-scoped stable-order storage, effects with cleanup, keyed reconciliation, lifecycle.

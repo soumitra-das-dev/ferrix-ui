@@ -15,6 +15,7 @@ This directory maintains persistent, verified operational knowledge across devel
 | [`commands.md`](./commands.md) | Verified commands for environment setup, building, testing, and debugging |
 | [`backlog.md`](./backlog.md) | Out-of-scope issues and enhancement ideas to triage |
 | [`milestone-01.md`](./milestone-01.md) | Retrospective and gate evidence for Milestone 1: Native Foundation |
+| [`milestone-02.md`](./milestone-02.md) | Retrospective and gate evidence for Milestone 2: Element System |
 
 ## Standard Entry Format
 ```markdown

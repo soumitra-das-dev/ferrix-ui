@@ -1,10 +1,13 @@
 package com.ferrix.runtime
 
 import android.content.Context
+import android.graphics.Outline
+import android.graphics.drawable.ShapeDrawable
 import android.os.Looper
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -12,6 +15,7 @@ import androidx.collection.LongSparseArray
 import com.ferrix.runtime.protocol.EventType
 import com.ferrix.runtime.protocol.Patch
 import com.ferrix.runtime.protocol.Property
+import com.ferrix.runtime.protocol.ViewType
 import com.ferrix.runtime.protocol.Visibility
 
 /**
@@ -46,8 +50,15 @@ class FerrixRenderer(
         for (patch in patches) {
             when (patch) {
                 is Patch.CreateNode -> {
-                    if (patch.nodeId == 1L && rootContainer is LinearLayout) {
-                        // Root already provided
+                    if (patch.nodeId == 1L) {
+                        // Root container already provided by Activity
+                        if (rootContainer is LinearLayout) {
+                            rootContainer.orientation = if (patch.viewType == ViewType.ROW) {
+                                LinearLayout.HORIZONTAL
+                            } else {
+                                LinearLayout.VERTICAL
+                            }
+                        }
                     } else {
                         val view = viewFactory.createView(patch.viewType)
                         nodes.put(patch.nodeId, view)
@@ -57,7 +68,8 @@ class FerrixRenderer(
                     val parent = nodes.get(patch.parentId) as? ViewGroup
                     val child = nodes.get(patch.childId)
                     if (parent != null && child != null) {
-                        if (child.parent == null) {
+                        if (child.parent != parent) {
+                            (child.parent as? ViewGroup)?.removeView(child)
                             parent.addView(child)
                         }
                     }
@@ -67,10 +79,8 @@ class FerrixRenderer(
                     val child = nodes.get(patch.childId)
                     val before = nodes.get(patch.beforeId)
                     if (parent != null && child != null) {
+                        (child.parent as? ViewGroup)?.removeView(child)
                         val index = if (before != null) parent.indexOfChild(before) else -1
-                        if (child.parent != null) {
-                            (child.parent as? ViewGroup)?.removeView(child)
-                        }
                         if (index >= 0) {
                             parent.addView(child, index)
                         } else {
@@ -131,11 +141,28 @@ class FerrixRenderer(
                         is Property.Spacing -> {
                             if (view is LinearLayout) {
                                 val density = context.resources.displayMetrics.density
-                                view.dividerPadding = (prop.dp * density).toInt()
+                                val spacePx = (prop.dp * density).toInt()
+                                val shape = ShapeDrawable().apply {
+                                    if (view.orientation == LinearLayout.VERTICAL) {
+                                        intrinsicHeight = spacePx
+                                    } else {
+                                        intrinsicWidth = spacePx
+                                    }
+                                    alpha = 0
+                                }
+                                view.dividerDrawable = shape
+                                view.showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
                             }
                         }
                         is Property.CornerRadius -> {
-                            // Can be mapped to outlineProvider or background drawable
+                            val density = context.resources.displayMetrics.density
+                            val radiusPx = prop.dp * density
+                            view.clipToOutline = true
+                            view.outlineProvider = object : ViewOutlineProvider() {
+                                override fun getOutline(view: View, outline: Outline) {
+                                    outline.setRoundRect(0, 0, view.width, view.height, radiusPx)
+                                }
+                            }
                         }
                         is Property.Enabled -> view.isEnabled = prop.enabled
                     }
@@ -157,7 +184,7 @@ class FerrixRenderer(
                             }
                         }
                         else -> {
-                            // Additional events handled as needed
+                            // Additional event handlers
                         }
                     }
                 }

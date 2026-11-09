@@ -6,81 +6,65 @@
 use std::panic::catch_unwind;
 use std::sync::Mutex;
 
-use ferrix_renderer_protocol::{EventType, NodeId, Patch, PatchBatch, Property, ViewType};
+use ferrix_core::prelude::*;
 use jni::objects::JClass;
 use jni::sys::{jbyteArray, jint, jlong, jobject};
 use jni::JNIEnv;
 
+/// Helper function to construct the declarative UI tree for a given counter value.
+fn build_ui_tree(counter: u32) -> Element {
+    let alloc = NodeIdAllocator::with_start(2);
+    Column::new()
+        .padding(20.0)
+        .spacing(16.0)
+        .background_color(0xFFF1F5F9)
+        .child(
+            Text::new("Ferrix Element System (M2)")
+                .size(22.0)
+                .color(0xFF0F172A),
+        )
+        .child(
+            Text::new("Demonstrating Column, Row, Text, and Button from Rust")
+                .size(14.0)
+                .color(0xFF475569),
+        )
+        .child(
+            Row::new()
+                .spacing(12.0)
+                .child(
+                    Button::new("Increment")
+                        .background_color(0xFF2563EB)
+                        .text_color(0xFFFFFFFF),
+                )
+                .child(
+                    Button::new("Reset")
+                        .background_color(0xFFDC2626)
+                        .text_color(0xFFFFFFFF),
+                ),
+        )
+        .child(
+            Text::new(format!("Counter: {}", counter))
+                .size(18.0)
+                .color(0xFF1E293B),
+        )
+        .build_with_id(NodeId::new(1), &alloc)
+}
+
 /// Internal state managed on the Rust side of the Android bridge.
 pub struct FerrixAndroidRuntime {
+    current_tree: Mutex<Element>,
     pending_patches: Mutex<Option<Vec<u8>>>,
     text_counter: Mutex<u32>,
 }
 
 impl FerrixAndroidRuntime {
     pub fn new() -> Self {
-        let mut initial_batch = PatchBatch::new();
-
-        // 1. Root container (Column)
-        initial_batch.push(Patch::CreateNode {
-            node_id: NodeId(1),
-            view_type: ViewType::Column,
-        });
-        initial_batch.push(Patch::SetProperty {
-            node_id: NodeId(1),
-            property: Property::Padding {
-                left: 16.0,
-                top: 24.0,
-                right: 16.0,
-                bottom: 24.0,
-            },
-        });
-        initial_batch.push(Patch::SetProperty {
-            node_id: NodeId(1),
-            property: Property::Spacing(12.0),
-        });
-
-        // 2. Native TextView rendered from Rust
-        initial_batch.push(Patch::CreateNode {
-            node_id: NodeId(2),
-            view_type: ViewType::Text,
-        });
-        initial_batch.push(Patch::SetText {
-            node_id: NodeId(2),
-            text: "Hello from Ferrix Native Rust!".to_string(),
-        });
-        initial_batch.push(Patch::SetProperty {
-            node_id: NodeId(2),
-            property: Property::FontSize(22.0),
-        });
-
-        // 3. Interactive Native Button
-        initial_batch.push(Patch::CreateNode {
-            node_id: NodeId(3),
-            view_type: ViewType::Button,
-        });
-        initial_batch.push(Patch::SetText {
-            node_id: NodeId(3),
-            text: "Tap to mutate from Rust".to_string(),
-        });
-        initial_batch.push(Patch::AttachEventListener {
-            node_id: NodeId(3),
-            event_type: EventType::Click,
-        });
-
-        // 4. Hierarchy assembly
-        initial_batch.push(Patch::AppendChild {
-            parent_id: NodeId(1),
-            child_id: NodeId(2),
-        });
-        initial_batch.push(Patch::AppendChild {
-            parent_id: NodeId(1),
-            child_id: NodeId(3),
-        });
-
+        let initial_tree = build_ui_tree(0);
+        let initial_batch = generate_mount_patches(&initial_tree);
         let encoded = initial_batch.encode();
 
         Self {
+            current_tree: Mutex::new(initial_tree),
             pending_patches: Mutex::new(Some(encoded)),
             text_counter: Mutex::new(0),
         }
@@ -88,17 +72,27 @@ impl FerrixAndroidRuntime {
 
     /// Handles an incoming UI event from Kotlin and queues any resulting patch updates.
     pub fn handle_event(&self, node_id: NodeId, event_type: EventType) -> Option<Vec<u8>> {
-        if node_id == NodeId(3) && event_type == EventType::Click {
-            let mut counter = self.text_counter.lock().unwrap();
+        let mut counter = self.text_counter.lock().unwrap();
+        let should_update = if node_id == NodeId(5) && event_type == EventType::Click {
+            // Node 5 is "Increment"
             *counter += 1;
+            true
+        } else if node_id == NodeId(6) && event_type == EventType::Click {
+            // Node 6 is "Reset"
+            *counter = 0;
+            true
+        } else {
+            false
+        };
 
-            let mut batch = PatchBatch::new();
-            batch.push(Patch::SetText {
-                node_id: NodeId(2),
-                text: format!("Rust Reactive Count: {}", *counter),
-            });
-            return Some(batch.encode());
+        if should_update {
+            let new_tree = build_ui_tree(*counter);
+            let mut tree_guard = self.current_tree.lock().unwrap();
+            let diff_batch = diff_elements(&tree_guard, &new_tree);
+            *tree_guard = new_tree;
+            return Some(diff_batch.encode());
         }
+
         None
     }
 }
@@ -149,8 +143,11 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeGetInitialPatc
             // SAFETY: `buf` slice pointer remains valid as long as `guard` holds the buffer in memory.
             let byte_buffer = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
             match byte_buffer {
-                Ok(obj) => obj.into_raw(),
-                Err(_) => std::ptr::null_mut(),
+                Ok(bb) => bb.into_raw(),
+                Err(err) => {
+                    tracing::error!("Failed to create DirectByteBuffer: {:?}", err);
+                    std::ptr::null_mut()
+                }
             }
         } else {
             std::ptr::null_mut()
@@ -160,8 +157,7 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeGetInitialPatc
     result.unwrap_or(std::ptr::null_mut())
 }
 
-/// Dispatches an event (click, text change) from Kotlin to Rust.
-/// Returns a `DirectByteBuffer` with any immediate response patches, or null if none.
+/// Dispatches an event from Kotlin to Rust and returns any resulting patches.
 #[no_mangle]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchEvent(
     mut env: JNIEnv,
@@ -176,23 +172,21 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchEvent(
             return std::ptr::null_mut();
         }
 
-        // SAFETY: `handle` is checked for zero and originates from `Box::into_raw`.
+        // SAFETY: `handle` is checked non-null and valid.
         let runtime = unsafe { &*(handle as *const FerrixAndroidRuntime) };
-        let event_type_enum = match EventType::from_u16(event_type as u16) {
+        let target_node = NodeId(node_id as u64);
+        let ev_type = match EventType::from_u16(event_type as u16) {
             Some(et) => et,
             None => return std::ptr::null_mut(),
         };
 
-        if let Some(patches) = runtime.handle_event(NodeId(node_id as u64), event_type_enum) {
+        if let Some(patch_bytes) = runtime.handle_event(target_node, ev_type) {
             let mut guard = runtime.pending_patches.lock().unwrap();
-            *guard = Some(patches);
+            *guard = Some(patch_bytes);
             if let Some(ref mut buf) = *guard {
-                // SAFETY: Direct buffer points to valid bytes inside the runtime's mutex guard.
-                let byte_buffer =
-                    unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
-                return byte_buffer
-                    .map(|obj| obj.into_raw())
-                    .unwrap_or(std::ptr::null_mut());
+                // SAFETY: pointer valid during buffer lifetime in mutex.
+                let bb = unsafe { env.new_direct_byte_buffer(buf.as_mut_ptr(), buf.len()) };
+                return bb.map(|b| b.into_raw()).unwrap_or(std::ptr::null_mut());
             }
         }
 
@@ -202,18 +196,18 @@ pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDispatchEvent(
     result.unwrap_or(std::ptr::null_mut())
 }
 
-/// Tears down the runtime and frees all native memory.
+/// Destroys the native runtime instance and releases its allocated memory.
 #[no_mangle]
 pub extern "system" fn Java_com_ferrix_runtime_FerrixBridge_nativeDestroy(
     _env: JNIEnv,
     _class: JClass,
     handle: jlong,
 ) {
-    let _ = catch_unwind(move || {
+    let _ = catch_unwind(|| {
         if handle != 0 {
-            // SAFETY: Reclaiming ownership of the pointer allocated via `Box::into_raw`.
+            // SAFETY: Reclaims ownership of raw pointer allocated in `nativeInit`.
             unsafe {
-                drop(Box::from_raw(handle as *mut FerrixAndroidRuntime));
+                let _ = Box::from_raw(handle as *mut FerrixAndroidRuntime);
             }
         }
     });
@@ -227,53 +221,58 @@ mod tests {
     fn test_runtime_initial_batch() {
         let runtime = FerrixAndroidRuntime::new();
         let guard = runtime.pending_patches.lock().unwrap();
-        assert!(guard.is_some());
-        let encoded = guard.as_ref().unwrap();
+        let bytes = guard.as_ref().unwrap();
 
-        let batch = PatchBatch::decode(encoded).expect("failed to decode initial patch batch");
-        assert_eq!(batch.patches.len(), 11);
+        let batch = PatchBatch::decode(bytes).expect("Failed to decode initial patch batch");
 
-        // Verify root node
-        assert_eq!(
-            batch.patches[0],
-            Patch::CreateNode {
-                node_id: NodeId(1),
-                view_type: ViewType::Column
-            }
-        );
+        // Verify that all 4 view types (Column, Row, Text, Button) are created
+        let view_types: Vec<_> = batch
+            .patches
+            .iter()
+            .filter_map(|p| match p {
+                Patch::CreateNode { view_type, .. } => Some(*view_type),
+                _ => None,
+            })
+            .collect();
 
-        // Verify text node
-        assert_eq!(
-            batch.patches[3],
-            Patch::CreateNode {
-                node_id: NodeId(2),
-                view_type: ViewType::Text
-            }
-        );
-        assert_eq!(
-            batch.patches[4],
-            Patch::SetText {
-                node_id: NodeId(2),
-                text: "Hello from Ferrix Native Rust!".to_string()
-            }
-        );
+        assert!(view_types.contains(&ViewType::Column));
+        assert!(view_types.contains(&ViewType::Row));
+        assert!(view_types.contains(&ViewType::Text));
+        assert!(view_types.contains(&ViewType::Button));
     }
 
     #[test]
     fn test_runtime_event_handling() {
         let runtime = FerrixAndroidRuntime::new();
-        let response_bytes = runtime
-            .handle_event(NodeId(3), EventType::Click)
-            .expect("expected response patches on button click");
 
-        let batch = PatchBatch::decode(&response_bytes).expect("failed to decode response batch");
-        assert_eq!(batch.patches.len(), 1);
-        assert_eq!(
-            batch.patches[0],
-            Patch::SetText {
-                node_id: NodeId(2),
-                text: "Rust Reactive Count: 1".to_string()
+        // Node 5 is "Increment"
+        let patch_bytes = runtime
+            .handle_event(NodeId(5), EventType::Click)
+            .expect("Expected patch buffer on Increment click");
+
+        let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
+        assert_eq!(batch.len(), 1);
+        match &batch.patches[0] {
+            Patch::SetText { node_id, text } => {
+                assert_eq!(*node_id, NodeId(7));
+                assert_eq!(text, "Counter: 1");
             }
-        );
+            other => panic!("Expected SetText patch, got {:?}", other),
+        }
+
+        // Node 6 is "Reset"
+        let patch_bytes = runtime
+            .handle_event(NodeId(6), EventType::Click)
+            .expect("Expected patch buffer on Reset click");
+
+        let batch = PatchBatch::decode(&patch_bytes).expect("Failed to decode patch batch");
+        assert_eq!(batch.len(), 1);
+        match &batch.patches[0] {
+            Patch::SetText { node_id, text } => {
+                assert_eq!(*node_id, NodeId(7));
+                assert_eq!(text, "Counter: 0");
+            }
+            other => panic!("Expected SetText patch, got {:?}", other),
+        }
     }
 }
