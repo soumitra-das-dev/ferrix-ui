@@ -1,85 +1,59 @@
-//! Ferrix CLI - AOT compiler and tooling for Ferrix UI apps.
+//! # ferrix-cli
+//!
+//! Production command-line toolchain for the Ferrix UI framework.
+//! Provides project scaffolding, toolchain diagnostics, live dev loop, AOT compilation,
+//! code formatting, linter validation, and release packaging.
 
-use std::env;
-use std::path::{Path, PathBuf};
+pub mod args;
+pub mod commands;
+pub mod templates;
+
+use std::path::Path;
 use std::process;
 
-fn print_usage() {
-    eprintln!(
-        r#"Ferrix CLI v{version}
-Usage:
-    ferrix compile <input.fsx> [-o <output.rs>]
-    ferrix --version
-    ferrix --help
+use clap::Parser;
 
-Commands:
-    compile    Compile a .fsx declarative UI file to native Rust code
-"#,
-        version = env!("CARGO_PKG_VERSION")
-    );
-}
+use crate::args::{Cli, Commands};
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        print_usage();
-        process::exit(1);
-    }
+    let cli = Cli::parse();
 
-    match args[1].as_str() {
-        "--version" | "-V" => {
-            println!("ferrix {}", env!("CARGO_PKG_VERSION"));
-        }
-        "--help" | "-h" | "help" => {
-            print_usage();
-        }
-        "compile" => {
-            if args.len() < 3 {
-                eprintln!("Error: 'compile' requires an input .fsx file.");
-                print_usage();
-                process::exit(1);
-            }
-            let input_path = &args[2];
-            let mut output_path = None;
-            let mut idx = 3;
-            while idx < args.len() {
-                if args[idx] == "-o" || args[idx] == "--output" {
-                    if idx + 1 < args.len() {
-                        output_path = Some(args[idx + 1].clone());
-                        idx += 2;
-                    } else {
-                        eprintln!("Error: -o/--output requires a path argument.");
-                        process::exit(1);
-                    }
-                } else {
-                    eprintln!("Unknown option: {}", args[idx]);
-                    process::exit(1);
-                }
-            }
+    let result = match &cli.command {
+        Commands::New(args) => {
+            let target_dir = Path::new(&args.name);
+            println!(
+                "🚀 Scaffolding new Ferrix app '{}' using template '{}'...\n",
+                args.name, args.template
+            );
 
-            let input_p = Path::new(input_path);
-            let out_p = output_path
-                .map(PathBuf::from)
-                .unwrap_or_else(|| input_p.with_extension("rs"));
-
-            match ferrix_compiler::compile_file(input_p, &out_p) {
+            match templates::scaffold_project(target_dir, args) {
                 Ok(()) => {
-                    println!(
-                        "Successfully compiled {} -> {}",
-                        input_p.display(),
-                        out_p.display()
-                    );
+                    println!("\n✨ Project '{}' created successfully!\n", args.name);
+                    println!("Next steps:");
+                    println!("  cd {}", args.name);
+                    println!("  ferrix doctor       # Verify Android toolchain prerequisites");
+                    println!("  ferrix dev          # Start local development loop");
+                    println!("  ferrix run android  # Run on emulator or device");
+                    Ok(())
                 }
-                Err(err) => {
-                    eprintln!("{}", err);
-                    process::exit(1);
-                }
+                Err(e) => Err(format!("Scaffolding failed: {}", e)),
             }
         }
-        other => {
-            eprintln!("Unknown command: {}", other);
-            print_usage();
-            process::exit(1);
-        }
+        Commands::Doctor(args) => commands::doctor::execute(args),
+        Commands::Dev(args) => commands::dev::execute(args),
+        Commands::Run(args) => commands::run::execute(args),
+        Commands::Build(args) => commands::build::execute(args),
+        Commands::Check(args) => commands::check::execute(args),
+        Commands::Fmt(args) => commands::fmt::execute(args),
+        Commands::Test(args) => commands::test::execute(args),
+        Commands::Clean(args) => commands::clean::execute(args),
+        Commands::Add(args) => commands::add::execute(args),
+        Commands::Prebuild(args) => commands::prebuild::execute(args),
+        Commands::Compile(args) => commands::compile::execute(args),
+    };
+
+    if let Err(err_msg) = result {
+        eprintln!("\n❌ Error: {}", err_msg);
+        process::exit(1);
     }
 }

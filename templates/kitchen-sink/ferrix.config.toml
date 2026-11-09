@@ -1,0 +1,15 @@
+# Ferrix Application Configuration
+name = "kitchen-sink"
+slug = "kitchen-sink"
+version = "0.1.0"
+
+[android]
+package = "com.example.kitchen_sink"
+version_code = 1
+min_sdk = 26
+target_sdk = 34
+compile_sdk = 34
+scheme = "kitchen-sink"
+
+[build]
+output_dir = "dist"

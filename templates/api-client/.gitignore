@@ -1,0 +1,12 @@
+target/
+dist/
+*.so
+.env.local
+.env.*.local
+
+# Android & Gradle
+.gradle/
+build/
+android/.gradle/
+android/app/build/
+android/local.properties
