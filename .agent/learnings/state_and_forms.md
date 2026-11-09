@@ -23,3 +23,4 @@ Under **Architecture A**, application state is owned and managed by the Rust run
 - `ferrix-store`: 3 unit tests in `crates/ferrix-store/tests/store_tests.rs` (updates, selector isolation, persistence middleware).
 - `ferrix-forms`: 2 unit tests in `crates/ferrix-forms/tests/forms_tests.rs` (validation rules, touched/dirty states, version counter increments, form controller submission).
 - Workspace: 87 Rust tests passing, all Android Robolectric tests passing.
+

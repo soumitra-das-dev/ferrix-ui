@@ -34,3 +34,4 @@ pub struct Store<S> {
 ### 3.2 Cursor Jump Prevention
 - Traditional React Native architectures suffer from cursor jumping when native `EditText` emits a change event, asynchronous roundtrips update state, and the runtime sets the text back.
 - Ferrix tracks a monotonic `version: u64` per field. When native text events arrive, Ferrix updates the internal field value and increments `version`. The native `SetText` patch is emitted only if the sanitized value differs from the user's keystroke, completely eliminating cursor repositioning.
+

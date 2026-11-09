@@ -27,3 +27,4 @@ Storage under **Architecture A** enforces that client-side state inspection neve
 - `ferrix-storage`: 5 tests passing in `crates/ferrix-storage/tests/storage_tests.rs` (CRUD, JSON serialization, namespaces, WAL journal recovery, compaction, `use_storage` hook).
 - `ferrix-sqlite`: 3 tests passing in `crates/ferrix-sqlite/tests/sqlite_tests.rs` (migrations, CRUD operations, live query invalidations).
 - Workspace: 82 Rust tests passing, all Android Robolectric tests passing.
+
