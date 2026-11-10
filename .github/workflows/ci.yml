@@ -51,6 +51,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Host JNI Library for Robolectric Tests
+        run: cargo build -p ferrix-android
+
       - name: Run Gradle Unit Tests
         run: |
           cd android

@@ -26,17 +26,7 @@ class ProductionReadyTest {
         @JvmStatic
         @BeforeClass
         fun loadNativeLibrary() {
-            val candidatePaths = listOf(
-                "../../target/debug/libferrix_android.so",
-                "target/debug/libferrix_android.so",
-                "../target/debug/libferrix_android.so"
-            )
-            val soFile = candidatePaths
-                .map { File(it).canonicalFile }
-                .firstOrNull { it.exists() }
-
-            assertNotNull("Could not find host libferrix_android.so", soFile)
-            System.load(soFile!!.absolutePath)
+            NativeLibLoader.ensureLoaded()
         }
     }
 
