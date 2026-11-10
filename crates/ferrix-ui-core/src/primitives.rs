@@ -2639,3 +2639,146 @@ impl From<Icon> for ElementDef {
         val.def
     }
 }
+
+/// TabNavigator declarative navigation container.
+#[derive(Clone, Debug)]
+pub struct TabNavigator {
+    def: ElementDef,
+}
+
+impl TabNavigator {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::NavContainer),
+        }
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<ElementDef>>) -> Self {
+        for child in children {
+            self.def.children.push(child.into());
+        }
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl Default for TabNavigator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<TabNavigator> for ElementDef {
+    fn from(val: TabNavigator) -> Self {
+        val.def
+    }
+}
+
+/// StackNavigator declarative navigation container.
+#[derive(Clone, Debug)]
+pub struct StackNavigator {
+    def: ElementDef,
+}
+
+impl StackNavigator {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::NavContainer),
+        }
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<ElementDef>>) -> Self {
+        for child in children {
+            self.def.children.push(child.into());
+        }
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl Default for StackNavigator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<StackNavigator> for ElementDef {
+    fn from(val: StackNavigator) -> Self {
+        val.def
+    }
+}
+
+/// Screen declarative navigation destination.
+#[derive(Clone, Debug)]
+pub struct Screen {
+    def: ElementDef,
+}
+
+impl Screen {
+    pub fn new() -> Self {
+        Self {
+            def: ElementDef::new(ViewType::Screen),
+        }
+    }
+
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.def.props.push(Property::TestId(name.into()));
+        self
+    }
+
+    pub fn child(mut self, child: impl Into<ElementDef>) -> Self {
+        self.def.children.push(child.into());
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl Into<ElementDef>>) -> Self {
+        for child in children {
+            self.def.children.push(child.into());
+        }
+        self
+    }
+
+    pub fn build(self, allocator: &NodeIdAllocator) -> Element {
+        self.def.build(allocator)
+    }
+
+    pub fn build_with_id(self, id: NodeId, allocator: &NodeIdAllocator) -> Element {
+        self.def.build_with_id(id, allocator)
+    }
+}
+
+impl Default for Screen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<Screen> for ElementDef {
+    fn from(val: Screen) -> Self {
+        val.def
+    }
+}

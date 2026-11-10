@@ -34,7 +34,11 @@ pub enum Commands {
     Build(BuildArgs),
 
     /// Run type checks and static linter rules on .fsx components
+    #[command(alias = "lint")]
     Check(CheckArgs),
+
+    /// Style checking and Tailwind compilation
+    Style(StyleArgs),
 
     /// Format .fsx files using the lossless AST formatter
     Fmt(FmtArgs),
@@ -68,9 +72,21 @@ pub struct NewArgs {
     #[arg(short, long)]
     pub list: bool,
 
+    /// Non-interactive mode (accept all default options)
+    #[arg(short, long)]
+    pub yes: bool,
+
+    /// Force scaffolding into an existing directory
+    #[arg(long)]
+    pub use_existing_dir: bool,
+
     /// Include file-based router (F1)
     #[arg(long)]
     pub router: bool,
+
+    /// Explicitly disable router
+    #[arg(long)]
+    pub no_router: bool,
 
     /// Include native navigation containers (F2)
     #[arg(long)]
@@ -87,6 +103,46 @@ pub struct NewArgs {
     /// Include Tailwind utility styling pipeline
     #[arg(long)]
     pub tailwind: bool,
+
+    /// Disable Tailwind styling pipeline
+    #[arg(long)]
+    pub no_tailwind: bool,
+
+    /// Include PostCSS pipeline
+    #[arg(long)]
+    pub postcss: bool,
+
+    /// Include network client and data fetching
+    #[arg(long)]
+    pub network: bool,
+
+    /// Include linter checks in project config
+    #[arg(long)]
+    pub lint: bool,
+
+    /// Include headless component test suite
+    #[arg(long)]
+    pub test: bool,
+
+    /// CI configuration: github or none
+    #[arg(long)]
+    pub ci: Option<String>,
+
+    /// Initialize git repository
+    #[arg(long)]
+    pub git: bool,
+
+    /// Do not initialize git repository
+    #[arg(long)]
+    pub no_git: bool,
+
+    /// Include platform modules (comma-separated: camera,location,storage)
+    #[arg(long)]
+    pub modules: Option<String>,
+
+    /// Node package manager (npm, pnpm, yarn, bun)
+    #[arg(long)]
+    pub package_manager: Option<String>,
 
     /// Include ICU multilingual internationalization (F5)
     #[arg(long)]
@@ -110,9 +166,65 @@ pub struct DevArgs {
     #[arg(short, long)]
     pub device: Option<String>,
 
+    /// Target platform (android)
+    #[arg(long)]
+    pub android: bool,
+
+    /// AVD name to launch if no emulator running
+    #[arg(long)]
+    pub avd: Option<String>,
+
+    /// List connected devices and exit
+    #[arg(long)]
+    pub list_devices: bool,
+
+    /// Dev server port (default: 8081)
+    #[arg(long)]
+    pub port: Option<u16>,
+
+    /// Clear build and bundler caches before starting
+    #[arg(long)]
+    pub clear: bool,
+
+    /// Do not automatically launch the app on device
+    #[arg(long)]
+    pub no_open: bool,
+
+    /// Run non-interactively without raw terminal UI
+    #[arg(long)]
+    pub no_interactive: bool,
+
+    /// Output events as newline-delimited JSON
+    #[arg(long)]
+    pub json: bool,
+
+    /// Build with release optimizations in dev
+    #[arg(long)]
+    pub release_like: bool,
+
     /// Disable automatic file watching
     #[arg(long)]
     pub no_watch: bool,
+
+    /// Run in non-interactive smoke test mode and exit on completion
+    #[arg(long)]
+    pub smoke: bool,
+
+    /// Timeout in seconds for smoke test mode
+    #[arg(long, default_value = "300")]
+    pub timeout: u64,
+}
+
+#[derive(Args, Debug)]
+pub struct StyleArgs {
+    #[command(subcommand)]
+    pub action: Option<StyleAction>,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum StyleAction {
+    /// Check CSS and Tailwind style declarations
+    Check,
 }
 
 #[derive(Args, Debug)]

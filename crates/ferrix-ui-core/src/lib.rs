@@ -30,9 +30,9 @@ pub use platform::{
 pub use primitives::{
     use_safe_area_insets, ActivityIndicator, Badge, Button, Center, Checkbox, Column, Divider,
     EdgeInsets, FlatList, Fragment, Grid, Icon, Image, ImageBackground, LazyList, LinearGradient,
-    Modal, Portal, Pressable, ProgressBar, RefreshControl, Row, SafeAreaView, ScrollView, Slider,
-    Spacer, Stack, Switch, Text, TextInput, TouchableHighlight, TouchableOpacity,
-    TouchableWithoutFeedback, View, ZStack,
+    Modal, Portal, Pressable, ProgressBar, RefreshControl, Row, SafeAreaView, Screen, ScrollView,
+    Slider, Spacer, Stack, StackNavigator, Switch, TabNavigator, Text, TextInput,
+    TouchableHighlight, TouchableOpacity, TouchableWithoutFeedback, View, ZStack,
 };
 pub use query_hooks::{use_mutation, use_query, MutationHandle};
 pub use reconcile::{diff_elements, generate_mount_patches};
@@ -57,8 +57,8 @@ pub mod prelude {
         use_safe_area_insets, ActivityIndicator, Badge, Button, Center, Checkbox, Column, Divider,
         EdgeInsets, FlatList, Fragment, Grid, Icon, Image, ImageBackground, LazyList,
         LinearGradient, Modal, Portal, Pressable, ProgressBar, RefreshControl, Row, SafeAreaView,
-        ScrollView, Slider, Spacer, Stack, Switch, Text, TextInput, TouchableHighlight,
-        TouchableOpacity, TouchableWithoutFeedback, View, ZStack,
+        Screen, ScrollView, Slider, Spacer, Stack, StackNavigator, Switch, TabNavigator, Text,
+        TextInput, TouchableHighlight, TouchableOpacity, TouchableWithoutFeedback, View, ZStack,
     };
     pub use crate::query_hooks::{use_mutation, use_query, MutationHandle};
     pub use crate::reconcile::{diff_elements, generate_mount_patches};

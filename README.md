@@ -55,10 +55,20 @@ ferrix doctor --fix
 ```
 
 ### 3. Run the Development Server
-Starts file watching on `.fsx` files, fast incremental rebuilds, and device execution:
+Starts the Expo-style interactive dev server with tiered hot reload, live logs, and single-key shortcuts:
 
 ```bash
 ferrix dev
+```
+
+```text
+ 🚀 Ferrix Interactive Dev Server v0.1.0
+ 📦 App:       com.example.my_app
+ 📱 Target:    sdk_gphone64_x86_64 [Emulator] (ABI: x86_64, Serial: emulator-5554)
+ 🌐 Dev Port:  http://127.0.0.1:8081
+ ⚡ Bundler:   AOT Incremental + Tiered Fast Refresh
+
+› Press a open Android │ r reload │ R rebuild │ m dev menu │ l logs │ ? help │ q quit
 ```
 
 ### 4. Build Production Release (APK / AAB)

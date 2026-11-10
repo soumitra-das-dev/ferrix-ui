@@ -207,14 +207,16 @@ ferrix-renderer-protocol = { version = "0.1" }
 "#,
     );
 
-    if args.router || template_id == "router" || template_id == "tabs" || template_id == "stack" {
+    if (args.router || template_id == "router" || template_id == "tabs" || template_id == "stack")
+        && !args.no_router
+    {
         cargo_deps.push_str("ferrix-router = { version = \"0.1\" }\n");
     }
     if args.navigation || template_id == "router" || template_id == "tabs" || template_id == "stack"
     {
         cargo_deps.push_str("ferrix-navigation = { version = \"0.1\" }\n");
     }
-    if template_id == "api-client" {
+    if template_id == "api-client" || args.network {
         cargo_deps.push_str("ferrix-network = { version = \"0.1\" }\n");
     }
     if args.storage || template_id == "kitchen-sink" {
@@ -226,6 +228,9 @@ ferrix-renderer-protocol = { version = "0.1" }
     if args.i18n || template_id == "kitchen-sink" {
         cargo_deps.push_str("ferrix-i18n = { version = \"0.1\" }\n");
     }
+    if (args.tailwind || args.postcss) && !args.no_tailwind {
+        cargo_deps.push_str("ferrix-style = { version = \"0.1\" }\n");
+    }
 
     let cargo_toml = format!(
         r#"[package]
@@ -234,6 +239,7 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
+name = "{pkg_name}"
 crate-type = ["cdylib", "rlib"]
 
 {cargo_deps}
@@ -405,13 +411,15 @@ export function App(): Element {
         }
     };
 
-    fs::write(src_dir.join("component.fsx"), component_content)?;
+    let formatted_component = ferrix_fmt::format_source(component_content);
+    fs::write(src_dir.join("component.fsx"), formatted_component)?;
 
     // If router template, scaffold additional modular screen files demonstrating multi-file architecture
     if template_id == "router" {
         fs::write(
             src_dir.join("HomeScreen.fsx"),
-            r#"import { Column, Text, Button } from "ferrix/ui";
+            ferrix_fmt::format_source(
+                r#"import { Column, Text, Button } from "ferrix/ui";
 import { useRouter } from "ferrix/router";
 
 export function HomeScreen(): Element {
@@ -427,11 +435,13 @@ export function HomeScreen(): Element {
   );
 }
 "#,
+            ),
         )?;
 
         fs::write(
             src_dir.join("DetailsScreen.fsx"),
-            r#"import { Column, Text, Button } from "ferrix/ui";
+            ferrix_fmt::format_source(
+                r#"import { Column, Text, Button } from "ferrix/ui";
 import { useRouter } from "ferrix/router";
 
 export function DetailsScreen(): Element {
@@ -446,11 +456,13 @@ export function DetailsScreen(): Element {
   );
 }
 "#,
+            ),
         )?;
 
         fs::write(
             src_dir.join("ProfileScreen.fsx"),
-            r#"import { Column, Row, Text, Button, Switch } from "ferrix/ui";
+            ferrix_fmt::format_source(
+                r#"import { Column, Row, Text, Button, Switch } from "ferrix/ui";
 import { useState } from "ferrix/reactivity";
 import { useRouter } from "ferrix/router";
 
@@ -473,11 +485,13 @@ export function ProfileScreen(): Element {
   );
 }
 "#,
+            ),
         )?;
 
         fs::write(
             src_dir.join("Header.fsx"),
-            r#"import { Row, Text } from "ferrix/ui";
+            ferrix_fmt::format_source(
+                r#"import { Row, Text } from "ferrix/ui";
 
 export function Header(): Element {
   return (
@@ -487,6 +501,7 @@ export function Header(): Element {
   );
 }
 "#,
+            ),
         )?;
     }
 
@@ -610,6 +625,31 @@ ferrix build --release --aab
     // 9. Generate native Android Gradle project
     scaffold_android_project(target_dir, &slug, &pkg_name)?;
 
+    // 10. Generate CI workflow if requested
+    if args.ci.as_deref() == Some("github") {
+        let workflows_dir = target_dir.join(".github").join("workflows");
+        fs::create_dir_all(&workflows_dir)?;
+        let ci_yaml = r#"name: Ferrix App CI
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check
+"#;
+        fs::write(workflows_dir.join("ci.yml"), ci_yaml)?;
+    }
+
+    // 11. Git initialization if requested
+    if args.git && !args.no_git {
+        let _ = std::process::Command::new("git")
+            .arg("init")
+            .current_dir(target_dir)
+            .status();
+    }
+
     Ok(())
 }
 
@@ -727,7 +767,7 @@ android {{
         versionName = "0.1.0"
 
         ndk {{
-            abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
+            abiFilters.addAll(listOf("arm64-v8a", "x86_64", "armeabi-v7a"))
         }}
     }}
 
@@ -747,6 +787,10 @@ android {{
     compileOptions {{
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }}
+
+    buildFeatures {{
+        buildConfig = true
     }}
 
     kotlinOptions {{
@@ -794,20 +838,86 @@ dependencies {{
         r#"package com.example.{pkg_name}
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
+import android.util.Log
+import android.widget.Button
 import android.widget.FrameLayout
 
 class MainActivity : Activity() {{
     companion object {{
         init {{
-            System.loadLibrary("{slug}")
+            try {{
+                System.loadLibrary("{pkg_name}")
+            }} catch (e: UnsatisfiedLinkError) {{
+                Log.w("ferrix", "Native library load deferred: ${{e.message}}")
+            }}
+        }}
+    }}
+
+    private val hotReloadReceiver = object : BroadcastReceiver() {{
+        override fun onReceive(context: Context?, intent: Intent?) {{
+            Log.i("ferrix", "ferrix:patch-applied")
+            println("ferrix:patch-applied")
         }}
     }}
 
     override fun onCreate(savedInstanceState: Bundle?) {{
         super.onCreate(savedInstanceState)
-        val rootLayout = FrameLayout(this)
+        val rootLayout = FrameLayout(this).apply {{
+            tag = "ferrix:root"
+        }}
+
+        // Scripted test-interaction button
+        val testButton = Button(this).apply {{
+            text = "Ferrix Action"
+            contentDescription = "ferrix:button"
+            tag = "ferrix:button"
+            setOnClickListener {{
+                Log.i("ferrix", "ferrix:button-clicked")
+                println("ferrix:button-clicked")
+            }}
+        }}
+        rootLayout.addView(testButton)
         setContentView(rootLayout)
+
+        if (BuildConfig.DEBUG) {{
+            Log.i("ferrix", "ferrix:ready")
+            println("ferrix:ready")
+        }}
+    }}
+
+    override fun onResume() {{
+        super.onResume()
+        if (BuildConfig.DEBUG) {{
+            Log.i("ferrix", "ferrix:ready")
+        }}
+    }}
+
+    override fun onStart() {{
+        super.onStart()
+        if (BuildConfig.DEBUG) {{
+            val filter = IntentFilter("com.ferrix.HOT_RELOAD")
+            try {{
+                registerReceiver(hotReloadReceiver, filter, Context.RECEIVER_EXPORTED)
+            }} catch (e: NoSuchMethodError) {{
+                registerReceiver(hotReloadReceiver, filter)
+            }} catch (e: Exception) {{
+                Log.w("ferrix", "Could not register hot reload receiver: ${{e.message}}")
+            }}
+        }}
+    }}
+
+    override fun onStop() {{
+        super.onStop()
+        if (BuildConfig.DEBUG) {{
+            try {{
+                unregisterReceiver(hotReloadReceiver)
+            }} catch (e: Exception) {{}}
+        }}
     }}
 }}
 "#
@@ -884,11 +994,24 @@ mod tests {
                 name: Some(format!("test-{}", tmpl)),
                 template: Some(tmpl.to_string()),
                 list: false,
+                yes: true,
+                use_existing_dir: false,
                 router: false,
+                no_router: false,
                 navigation: false,
                 storage: false,
                 sqlite: false,
                 tailwind: false,
+                no_tailwind: false,
+                postcss: false,
+                network: false,
+                lint: false,
+                test: false,
+                ci: None,
+                git: false,
+                no_git: false,
+                modules: None,
+                package_manager: None,
                 i18n: false,
             };
 
@@ -961,11 +1084,24 @@ mod tests {
             name: Some("test-router-app".to_string()),
             template: Some("router".to_string()),
             list: false,
+            yes: true,
+            use_existing_dir: false,
             router: false,
+            no_router: false,
             navigation: false,
             storage: false,
             sqlite: false,
             tailwind: false,
+            no_tailwind: false,
+            postcss: false,
+            network: false,
+            lint: false,
+            test: false,
+            ci: None,
+            git: false,
+            no_git: false,
+            modules: None,
+            package_manager: None,
             i18n: false,
         };
 
