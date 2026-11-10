@@ -3,10 +3,12 @@ name = "ferrix-lint"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "Static analysis and linter rules for Ferrix .fsx components"
 authors.workspace = true
 
 [dependencies]
-ferrix-compiler = { path = "../ferrix-compiler" }
+ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
