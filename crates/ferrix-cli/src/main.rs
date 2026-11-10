@@ -6,6 +6,10 @@
 
 pub mod args;
 pub mod commands;
+pub mod crash;
+pub mod dev_server;
+pub mod device;
+pub mod jni;
 pub mod templates;
 
 use std::path::Path;
@@ -27,6 +31,7 @@ fn main() {
 
             let app_name = match &args.name {
                 Some(name) if !name.trim().is_empty() => name.trim().to_string(),
+                _ if args.yes => "my-app".to_string(),
                 _ => templates::prompt_app_name(),
             };
 
@@ -41,6 +46,8 @@ fn main() {
                 None => {
                     if args.router {
                         "router".to_string()
+                    } else if args.yes {
+                        "hello-counter".to_string()
                     } else {
                         templates::prompt_template()
                     }
@@ -48,6 +55,14 @@ fn main() {
             };
 
             let target_dir = Path::new(&app_name);
+            if target_dir.exists() && !args.use_existing_dir {
+                if let Ok(mut entries) = std::fs::read_dir(target_dir) {
+                    if entries.next().is_some() {
+                        eprintln!("\n❌ Error: Target directory '{}' already exists and is not empty. Use --use-existing-dir to force scaffolding into an existing directory.", app_name);
+                        process::exit(1);
+                    }
+                }
+            }
             println!(
                 "🚀 Scaffolding new Ferrix app '{}' using template '{}'...\n",
                 app_name, template_id
@@ -77,6 +92,7 @@ fn main() {
         Commands::Add(args) => commands::add::execute(args),
         Commands::Prebuild(args) => commands::prebuild::execute(args),
         Commands::Compile(args) => commands::compile::execute(args),
+        Commands::Style(args) => commands::style::execute(args),
     };
 
     if let Err(err_msg) = result {

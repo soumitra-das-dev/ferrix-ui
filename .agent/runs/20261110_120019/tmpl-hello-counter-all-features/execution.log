@@ -1,0 +1,280 @@
+  [Step 1/9] Scaffolding...
+🚀 Scaffolding new Ferrix app 'my-app' using template 'hello-counter'...
+
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/ferrix-sandbox/my-app/.git/
+
+✨ Project 'my-app' created successfully!
+
+Next steps:
+  cd my-app
+  ferrix doctor       # Verify Android toolchain prerequisites
+  ferrix dev          # Start local development loop
+  ferrix run android  # Run on emulator or device
+  [Step 2/9] Doctor...
+🩺 Running Ferrix Doctor diagnostics...
+
+  ✅ Rust Compiler: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+  ✅ Cargo Package Manager: cargo 1.99.1 (5f94df478 2026-08-27)
+  ✅ Rust Android Targets: aarch64-linux-android, x86_64-linux-android installed
+  ✅ Android SDK: Found at /home/soumo/.local/share/android-sdk
+  ✅ Android NDK: Installed and available
+  ✅ Java Development Kit (JDK): javac 21.0.13
+  ✅ Android Debug Bridge (ADB): Android Debug Bridge version 1.0.41
+     📱 Connected targets: 2 device(s) online
+
+✨ Doctor found no critical issues. Your environment is ready for Ferrix!
+  [Step 3/9] Code quality...
+Checking formatting for .fsx files in '.'...
+
+✅ All .fsx files are properly formatted.
+🔍 Checking Ferrix UI components in '.'...
+
+
+✅ Check passed: 1 file(s) scanned, 0 errors, 0 warning(s).
+🔍 Checking Ferrix UI components in '.'...
+
+
+✅ Check passed: 1 file(s) scanned, 0 errors, 0 warning(s).
+🎨 Checking styles and CSS/Tailwind definitions...
+
+  Checked 0 CSS file(s) and 1 .fsx component(s).
+  ✅ Zero style violations detected.
+
+  [Step 4/9] Headless tests...
+🧪 Running Ferrix unit and headless component tests...
+
+    Updating crates.io index
+warning: patch `ferrix-android v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-android)` was not used in the crate graph
+warning: patch `ferrix-config v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-config)` was not used in the crate graph
+warning: patch `ferrix-fmt v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-fmt)` was not used in the crate graph
+warning: patch `ferrix-lint v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-lint)` was not used in the crate graph
+warning: patch `ferrix-style-build v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-style-build)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+     Locking 53 packages to highest compatible versions
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling version_check v0.9.5
+   Compiling thiserror v2.0.21
+   Compiling once_cell v1.21.4
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.19
+   Compiling slotmap v1.1.1
+   Compiling tracing-core v0.1.36
+   Compiling pin-project-lite v0.2.17
+   Compiling zerocopy v0.8.63
+   Compiling ahash v0.8.12
+   Compiling shlex v2.0.1
+   Compiling grid v0.15.0
+   Compiling arrayvec v0.7.8
+   Compiling ferrix-reactivity v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-reactivity)
+   Compiling find-msvc-tools v0.1.15
+   Compiling taffy v0.7.7
+   Compiling cc v1.11.1
+   Compiling syn v3.0.10
+   Compiling syn v2.0.119
+   Compiling cfg-if v1.0.5
+   Compiling vcpkg v0.2.15
+   Compiling pkg-config v0.3.34
+   Compiling bitflags v2.13.2
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling fallible-iterator v0.3.0
+   Compiling smallvec v1.16.5
+   Compiling libsqlite3-sys v0.28.0
+   Compiling thiserror-impl v2.0.21
+   Compiling serde_derive v1.0.229
+   Compiling ferrix-renderer-protocol v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-renderer-protocol)
+   Compiling ferrix-compiler v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-compiler)
+   Compiling ferrix-layout v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-layout)
+   Compiling my-app v0.1.0 (/tmp/ferrix-sandbox/my-app)
+   Compiling hashbrown v0.14.5
+   Compiling tracing-attributes v0.1.31
+   Compiling hashlink v0.9.1
+   Compiling ferrix-network v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-network)
+   Compiling tracing v0.1.44
+   Compiling ferrix-ui-core v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-ui-core)
+   Compiling ferrix-style v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-style)
+   Compiling ferrix-storage v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-storage)
+   Compiling ferrix-i18n v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-i18n)
+   Compiling ferrix-router v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-router)
+   Compiling ferrix-navigation v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-navigation)
+   Compiling rusqlite v0.31.0
+   Compiling ferrix-sqlite v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-sqlite)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 40.49s
+     Running unittests src/lib.rs (target/debug/deps/my_app-3708c8e5e2cace55)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests my_app
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+✅ All tests passed successfully!
+  [Step 5-6/9] Dev Smoke Test...
+🧪 Running Ferrix non-interactive smoke test (--smoke)...
+
+  📱 Selected target device: emulator-5554
+  🎯 Target device ABI: x86_64
+  🔨 Compiling Rust JNI library for 'x86_64-linux-android'...
+    Building x86_64 (x86_64-linux-android)
+warning: patch `ferrix-android v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-android)` was not used in the crate graph
+warning: patch `ferrix-config v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-config)` was not used in the crate graph
+warning: patch `ferrix-fmt v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-fmt)` was not used in the crate graph
+warning: patch `ferrix-lint v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-lint)` was not used in the crate graph
+warning: patch `ferrix-style-build v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-style-build)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling thiserror v2.0.21
+   Compiling version_check v0.9.5
+   Compiling once_cell v1.21.4
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling itoa v1.0.19
+   Compiling memchr v2.8.3
+   Compiling pin-project-lite v0.2.17
+   Compiling slotmap v1.1.1
+   Compiling tracing-core v0.1.36
+   Compiling zerocopy v0.8.63
+   Compiling ahash v0.8.12
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.15
+   Compiling grid v0.15.0
+   Compiling arrayvec v0.7.8
+   Compiling ferrix-reactivity v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-reactivity)
+   Compiling syn v3.0.10
+   Compiling syn v2.0.119
+   Compiling taffy v0.7.7
+   Compiling cc v1.11.1
+   Compiling cfg-if v1.0.5
+   Compiling vcpkg v0.2.15
+   Compiling pkg-config v0.3.34
+   Compiling smallvec v1.16.5
+   Compiling bitflags v2.13.2
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling fallible-iterator v0.3.0
+   Compiling libsqlite3-sys v0.28.0
+   Compiling thiserror-impl v2.0.21
+   Compiling serde_derive v1.0.229
+   Compiling ferrix-compiler v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-compiler)
+   Compiling ferrix-renderer-protocol v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-renderer-protocol)
+   Compiling ferrix-layout v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-layout)
+   Compiling hashbrown v0.14.5
+   Compiling my-app v0.1.0 (/tmp/ferrix-sandbox/my-app)
+   Compiling tracing-attributes v0.1.31
+   Compiling hashlink v0.9.1
+   Compiling tracing v0.1.44
+   Compiling ferrix-network v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-network)
+   Compiling ferrix-i18n v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-i18n)
+   Compiling ferrix-style v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-style)
+   Compiling ferrix-storage v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-storage)
+   Compiling ferrix-ui-core v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-ui-core)
+   Compiling ferrix-router v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-router)
+   Compiling ferrix-navigation v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-navigation)
+   Compiling rusqlite v0.31.0
+   Compiling ferrix-sqlite v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-sqlite)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 26.22s
+     Copying libraries to /tmp/ferrix-sandbox/my-app/android/app/src/main/jniLibs
+  📦 Building debug APK via Gradle assembleDebug...
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugBuildConfig
+> Task :app:generateDebugResValues
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:checkDebugAarMetadata
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeDebugResources
+> Task :app:mergeDebugJniLibFolders
+> Task :app:mergeLibDexDebug
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:processDebugManifestForPackage
+> Task :app:mergeDebugNativeLibs
+
+> Task :app:stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libmy_app.so.
+
+> Task :app:processDebugResources
+> Task :app:mergeExtDexDebug
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac
+> Task :app:dexBuilderDebug
+> Task :app:processDebugJavaRes
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+
+> Task :app:packageDebug
+There are no .so files available to package in the APK for arm64-v8a.
+
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 12s
+37 actionable tasks: 37 executed
+  📲 Installing APK via ADB to 'emulator-5554'...
+Performing Streamed Install
+Success
+  🚀 Starting activity 'com.example.my_app/.MainActivity' via ADB...
+Starting: Intent { cmp=com.example.my_app/.MainActivity }
+  ⏳ Waiting for runtime readiness marker ('ferrix:ready')...
+  ✅ Runtime readiness marker received ('ferrix:ready')!
+  🎯 Executing scripted interaction (synthetic button press)...
+  ✅ Interaction verified: synthetic button event dispatched and received!
+  🔥 Performing hot reload check...
+Broadcasting: Intent { act=com.ferrix.HOT_RELOAD flg=0x400000 }
+Broadcast completed: result=0
+  ✅ Hot reload verified: live patch applied without rebuild!
+
+🎉 Smoke test passed in 43.45s with zero errors!
+
+
+❌ Error: Target directory 'my-app' already exists and is not empty. Use --use-existing-dir to force scaffolding into an existing directory.

@@ -2,9 +2,9 @@ name: Ferrix CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, 'verify/**' ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, main, 'verify/**' ]
   workflow_dispatch:
 
 jobs:

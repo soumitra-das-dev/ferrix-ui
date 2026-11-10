@@ -32,8 +32,8 @@ npx create-ferrix-app my-app
 |---|---|---|
 | `ferrix new <name>` | Scaffolds a new project | `--template <t>`, `--router`, `--navigation`, `--storage`, `--sqlite`, `--i18n`, `--tailwind` |
 | `ferrix doctor` | Diagnoses toolchain prerequisites | `--fix`, `--verbose` |
-| `ferrix dev` | Starts live development loop with file watching | `--no-watch`, `--device <id>` |
-| `ferrix run android` | Builds and launches on emulator/device | `--release`, `--device <id>` |
+| `ferrix dev` | Starts interactive Expo-style dev server with live logs, key shortcuts, and tiered hot reload | `--device <id>`, `--list-devices`, `--smoke`, `--clear`, `--port <n>` (see [Dev Server Guide](dev-server.md) & [Hot Reload](hot-reload.md)) |
+| `ferrix run android` | Builds and launches on emulator/device with honest status verification | `--release`, `--device <id>` |
 | `ferrix build` | Builds production APK or AAB bundle | `--release`, `--apk`, `--aab`, `--abi <aarch64\|x86_64\|all>` |
 | `ferrix check [path]` | Runs AST syntax and linter checks on `.fsx` files | |
 | `ferrix fmt [path]` | Formats `.fsx` files with lossless trivia preservation | `--check` |

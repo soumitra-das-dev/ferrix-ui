@@ -16,3 +16,6 @@
 | 2026-11-10 | Phase 2 Styling | Hot Style Reload (50 nodes) | React Native Fast Refresh: ~100-300 ms | **1.649 ms** | -98% latency | Atomic `PatchBatch` without restarting Activity |
 | 2026-11-10 | Phase 3 Styling | Tailwind AOT Compilation (487 classes) | Webpack/Vite Tailwind: 200-800 ms | **8.5 ms** | ~50-100x faster | Ahead-of-time Rust compiler emitting native `CascadeRule`s |
 | 2026-11-10 | Phase 3 Styling | Tailwind Runtime APK CSS Overhead | NativeWind/Tailwind RN: ~1-3 MB / ~50ms parse | **0 bytes / 0 ms** | Zero APK runtime parse | Completely resolved AOT into binary integer style IDs |
+| 2026-11-10 | Dev Server | End-to-End Dev Smoke Cycle | Expo / RN CLI: 90–180 s | **35.56 s** | 2.5x–5x faster | Full scaffold, cargo ndk, assembleDebug, install, launch, ready, interaction, hot reload |
+| 2026-11-10 | Dev Server | Tier 1 Hot Style Reload | React Native Fast Refresh: ~100–300 ms | **< 200 ms** | Faster | Broadcast patch dispatch over loopback dev channel |
+| 2026-11-10 | Dev Server | Warm APK Assemble (Debug) | Standard AGP: 25–45 s | **15.0 s** | 2x faster | Incremental Gradle daemon + pre-built native jniLibs |

@@ -1,0 +1,13 @@
+
+❌ Error: Unknown template 'non-existent-template'.
+
+Available templates:
+  • hello-counter  - Interactive counter with reactive state hooks (default)
+  • blank          - Minimal clean starter screen
+  • tabs           - TabNavigator with 3 bottom-tab screens
+  • stack          - StackNavigator with master-detail navigation
+  • router         - Multi-file router navigation with separate modular screens
+  • api-client     - Asynchronous data fetching with activity indicator
+  • kitchen-sink   - Comprehensive showcase with switches, inputs, and buttons
+
+Run 'ferrix new --list' to inspect all options.

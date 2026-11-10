@@ -1,0 +1,122 @@
+  [Step 1/9] Scaffolding...
+🚀 Scaffolding new Ferrix app 'my-app' using template 'tabs'...
+
+
+✨ Project 'my-app' created successfully!
+
+Next steps:
+  cd my-app
+  ferrix doctor       # Verify Android toolchain prerequisites
+  ferrix dev          # Start local development loop
+  ferrix run android  # Run on emulator or device
+  [Step 2/9] Doctor...
+🩺 Running Ferrix Doctor diagnostics...
+
+  ✅ Rust Compiler: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+  ✅ Cargo Package Manager: cargo 1.99.1 (5f94df478 2026-08-27)
+  ✅ Rust Android Targets: aarch64-linux-android, x86_64-linux-android installed
+  ✅ Android SDK: Found at /home/soumo/.local/share/android-sdk
+  ✅ Android NDK: Installed and available
+  ✅ Java Development Kit (JDK): javac 21.0.13
+  ✅ Android Debug Bridge (ADB): Android Debug Bridge version 1.0.41
+     📱 Connected targets: 1 device(s) online
+
+✨ Doctor found no critical issues. Your environment is ready for Ferrix!
+  [Step 3/9] Code quality...
+Checking formatting for .fsx files in '.'...
+
+✅ All .fsx files are properly formatted.
+🔍 Checking Ferrix UI components in '.'...
+
+
+✅ Check passed: 1 file(s) scanned, 0 errors, 0 warning(s).
+🔍 Checking Ferrix UI components in '.'...
+
+
+✅ Check passed: 1 file(s) scanned, 0 errors, 0 warning(s).
+🎨 Checking styles and CSS/Tailwind definitions...
+
+  Checked 0 CSS file(s) and 1 .fsx component(s).
+  ✅ Zero style violations detected.
+
+  [Step 4/9] Headless tests...
+🧪 Running Ferrix unit and headless component tests...
+
+    Updating crates.io index
+warning: patch `ferrix-android v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-android)` was not used in the crate graph
+warning: patch `ferrix-config v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-config)` was not used in the crate graph
+warning: patch `ferrix-fmt v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-fmt)` was not used in the crate graph
+warning: patch `ferrix-i18n v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-i18n)` was not used in the crate graph
+warning: patch `ferrix-lint v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-lint)` was not used in the crate graph
+warning: patch `ferrix-sqlite v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-sqlite)` was not used in the crate graph
+warning: patch `ferrix-storage v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-storage)` was not used in the crate graph
+warning: patch `ferrix-style v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-style)` was not used in the crate graph
+warning: patch `ferrix-style-build v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-style-build)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+     Locking 32 packages to highest compatible versions
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling thiserror v2.0.21
+   Compiling serde_core v1.0.229
+   Compiling version_check v0.9.5
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling slotmap v1.1.1
+   Compiling once_cell v1.21.4
+   Compiling arrayvec v0.7.8
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.19
+   Compiling grid v0.15.0
+   Compiling tracing-core v0.1.36
+   Compiling pin-project-lite v0.2.17
+   Compiling ferrix-reactivity v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-reactivity)
+   Compiling taffy v0.7.7
+   Compiling syn v3.0.10
+   Compiling syn v2.0.119
+   Compiling thiserror-impl v2.0.21
+   Compiling serde_derive v1.0.229
+   Compiling ferrix-renderer-protocol v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-renderer-protocol)
+   Compiling ferrix-compiler v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-compiler)
+   Compiling ferrix-layout v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-layout)
+   Compiling my-app v0.1.0 (/tmp/ferrix-sandbox/my-app)
+   Compiling tracing-attributes v0.1.31
+   Compiling tracing v0.1.44
+   Compiling ferrix-network v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-network)
+   Compiling ferrix-ui-core v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-ui-core)
+   Compiling ferrix-router v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-router)
+   Compiling ferrix-navigation v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-navigation)
+error[E0433]: cannot find type `TabNavigator` in this scope
+ --> /tmp/ferrix-sandbox/my-app/target/debug/build/my-app-2260df6aa52463bd/out/component_generated.rs:9:5
+  |
+9 |     TabNavigator::new()
+  |     ^^^^^^^^^^^^ use of undeclared type `TabNavigator`
+
+error[E0433]: cannot find type `Screen` in this scope
+  --> /tmp/ferrix-sandbox/my-app/target/debug/build/my-app-2260df6aa52463bd/out/component_generated.rs:10:12
+   |
+10 |     .child(Screen::new()
+   |            ^^^^^^ use of undeclared type `Screen`
+
+error[E0433]: cannot find type `Screen` in this scope
+  --> /tmp/ferrix-sandbox/my-app/target/debug/build/my-app-2260df6aa52463bd/out/component_generated.rs:16:12
+   |
+16 |     .child(Screen::new()
+   |            ^^^^^^ use of undeclared type `Screen`
+
+error[E0433]: cannot find type `Screen` in this scope
+  --> /tmp/ferrix-sandbox/my-app/target/debug/build/my-app-2260df6aa52463bd/out/component_generated.rs:22:12
+   |
+22 |     .child(Screen::new()
+   |            ^^^^^^ use of undeclared type `Screen`
+
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `my-app` (lib) due to 4 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `my-app` (lib test) due to 4 previous errors
+
+❌ Error: Test suite execution failed.

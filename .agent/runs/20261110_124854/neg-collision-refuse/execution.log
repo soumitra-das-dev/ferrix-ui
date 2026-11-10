@@ -1,0 +1,12 @@
+
+❌ Error: Target directory 'my-app' already exists and is not empty. Use --use-existing-dir to force scaffolding into an existing directory.
+🚀 Scaffolding new Ferrix app 'my-app' using template 'hello-counter'...
+
+
+✨ Project 'my-app' created successfully!
+
+Next steps:
+  cd my-app
+  ferrix doctor       # Verify Android toolchain prerequisites
+  ferrix dev          # Start local development loop
+  ferrix run android  # Run on emulator or device

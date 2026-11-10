@@ -1,0 +1,101 @@
+  [Step 1/9] Scaffolding...
+🚀 Scaffolding new Ferrix app 'my-app' using template 'hello-counter'...
+
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/ferrix-sandbox/my-app/.git/
+
+✨ Project 'my-app' created successfully!
+
+Next steps:
+  cd my-app
+  ferrix doctor       # Verify Android toolchain prerequisites
+  ferrix dev          # Start local development loop
+  ferrix run android  # Run on emulator or device
+  [Step 2/9] Doctor...
+🩺 Running Ferrix Doctor diagnostics...
+
+  ✅ Rust Compiler: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+  ✅ Cargo Package Manager: cargo 1.99.1 (5f94df478 2026-08-27)
+  ✅ Rust Android Targets: aarch64-linux-android, x86_64-linux-android installed
+  ✅ Android SDK: Found at /home/soumo/.local/share/android-sdk
+  ✅ Android NDK: Installed and available
+  ✅ Java Development Kit (JDK): javac 21.0.13
+  ✅ Android Debug Bridge (ADB): Android Debug Bridge version 1.0.41
+     📱 Connected targets: 1 device(s) online
+
+✨ Doctor found no critical issues. Your environment is ready for Ferrix!
+  [Step 3/9] Code quality...
+Checking formatting for .fsx files in '.'...
+
+✅ All .fsx files are properly formatted.
+🔍 Checking Ferrix UI components in '.'...
+
+
+✅ Check passed: 1 file(s) scanned, 0 errors, 0 warning(s).
+🔍 Checking Ferrix UI components in '.'...
+
+
+✅ Check passed: 1 file(s) scanned, 0 errors, 0 warning(s).
+🎨 Checking styles and CSS/Tailwind definitions...
+
+  Checked 0 CSS file(s) and 1 .fsx component(s).
+  ✅ Zero style violations detected.
+
+  [Step 4/9] Headless tests...
+🧪 Running Ferrix unit and headless component tests...
+
+    Updating crates.io index
+warning: patch `ferrix-android v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-android)` was not used in the crate graph
+warning: patch `ferrix-config v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-config)` was not used in the crate graph
+warning: patch `ferrix-fmt v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-fmt)` was not used in the crate graph
+warning: patch `ferrix-lint v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-lint)` was not used in the crate graph
+warning: patch `ferrix-style-build v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-style-build)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+     Locking 53 packages to highest compatible versions
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling version_check v0.9.5
+   Compiling thiserror v2.0.21
+   Compiling once_cell v1.21.4
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.19
+   Compiling slotmap v1.1.1
+   Compiling tracing-core v0.1.36
+   Compiling pin-project-lite v0.2.17
+   Compiling zerocopy v0.8.63
+   Compiling ahash v0.8.12
+   Compiling ferrix-reactivity v0.1.0 (/home/soumo/Desktop/ferrix/crates/ferrix-reactivity)
+   Compiling shlex v2.0.1
+   Compiling grid v0.15.0
+   Compiling arrayvec v0.7.8
+   Compiling find-msvc-tools v0.1.15
+   Compiling syn v3.0.10
+   Compiling syn v2.0.119
+   Compiling taffy v0.7.7
+   Compiling cc v1.11.1
+   Compiling cfg-if v1.0.5
+   Compiling vcpkg v0.2.15
+   Compiling pkg-config v0.3.34
+   Compiling smallvec v1.16.5
+   Compiling bitflags v2.13.2
+   Compiling fallible-streaming-iterator v0.1.9

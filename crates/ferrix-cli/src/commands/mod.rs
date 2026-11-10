@@ -8,4 +8,5 @@ pub mod doctor;
 pub mod fmt;
 pub mod prebuild;
 pub mod run;
+pub mod style;
 pub mod test;

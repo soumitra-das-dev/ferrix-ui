@@ -1,0 +1,22 @@
+{
+  "timestamp": "20261110_124854",
+  "cases": [
+    { "id": "tmpl-hello-counter-default", "template": "hello-counter", "flags": "--yes" },
+    { "id": "tmpl-hello-counter-all-features", "template": "hello-counter", "flags": "--router --navigation --storage --sqlite --tailwind --i18n --network --ci github --git" },
+    { "id": "tmpl-hello-counter-minimal", "template": "hello-counter", "flags": "--no-router --no-tailwind --no-git" },
+    { "id": "tmpl-blank-default", "template": "blank", "flags": "--yes" },
+    { "id": "tmpl-blank-all-features", "template": "blank", "flags": "--router --navigation --storage --sqlite --tailwind --i18n --network" },
+    { "id": "tmpl-tabs-default", "template": "tabs", "flags": "--yes" },
+    { "id": "tmpl-tabs-pairwise", "template": "tabs", "flags": "--storage --tailwind --i18n" },
+    { "id": "tmpl-stack-default", "template": "stack", "flags": "--yes" },
+    { "id": "tmpl-stack-pairwise", "template": "stack", "flags": "--network --sqlite" },
+    { "id": "tmpl-router-default", "template": "router", "flags": "--yes" },
+    { "id": "tmpl-router-all-features", "template": "router", "flags": "--storage --sqlite --tailwind --i18n --network --ci github" },
+    { "id": "tmpl-api-client-default", "template": "api-client", "flags": "--yes" },
+    { "id": "tmpl-api-client-pairwise", "template": "api-client", "flags": "--storage --sqlite" },
+    { "id": "tmpl-kitchen-sink-default", "template": "kitchen-sink", "flags": "--yes" },
+    { "id": "tmpl-kitchen-sink-all-features", "template": "kitchen-sink", "flags": "--router --navigation --tailwind --i18n --ci github --git" },
+    { "id": "neg-collision-refuse", "template": "hello-counter", "flags": "--collision-test" },
+    { "id": "neg-unknown-template", "template": "non-existent-template", "flags": "--yes" }
+  ]
+}
