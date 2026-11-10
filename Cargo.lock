@@ -447,6 +447,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrix-style"
+version = "0.1.0"
+dependencies = [
+ "ferrix-layout",
+ "ferrix-renderer-protocol",
+ "serde",
+ "serde_json",
+ "taffy",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
+name = "ferrix-style-build"
+version = "0.1.0"
+dependencies = [
+ "ferrix-layout",
+ "ferrix-renderer-protocol",
+ "ferrix-style",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
 name = "ferrix-test"
 version = "0.1.0"
 dependencies = [

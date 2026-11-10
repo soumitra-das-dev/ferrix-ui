@@ -58,6 +58,7 @@ class FerrixRenderer(
     private val nodes = LongSparseArray<View>()
     private val nodeViewTypes = LongSparseArray<ViewType>()
     private val nodeTextVersions = HashMap<Long, Long>()
+    val styleRegistry = HashMap<Int, List<Property>>()
 
     init {
         // Register the host root view as NodeId 1 if designated as root
@@ -237,7 +238,150 @@ class FerrixRenderer(
                 }
                 is Patch.SetProperty -> {
                     val view = nodes.get(patch.nodeId) ?: continue
-                    when (val prop = patch.property) {
+                    applyPropertyToView(patch.nodeId, view, patch.property, density)
+                }
+                is Patch.RegisterStyles -> {
+                    for ((styleId, props) in patch.styles) {
+                        styleRegistry[styleId] = props
+                    }
+                }
+                is Patch.SetStyle -> {
+                    val view = nodes.get(patch.nodeId) ?: continue
+                    val props = styleRegistry[patch.styleId] ?: continue
+                    for (prop in props) {
+                        applyPropertyToView(patch.nodeId, view, prop, density)
+                    }
+                }
+                is Patch.SetStyleList -> {
+                    val view = nodes.get(patch.nodeId) ?: continue
+                    for (styleId in patch.styleIds) {
+                        val props = styleRegistry[styleId] ?: continue
+                        for (prop in props) {
+                            applyPropertyToView(patch.nodeId, view, prop, density)
+                        }
+                    }
+                }
+                is Patch.SetVisibility -> {
+                    val view = nodes.get(patch.nodeId) ?: continue
+                    view.visibility = when (patch.visibility) {
+                        Visibility.VISIBLE -> View.VISIBLE
+                        Visibility.INVISIBLE -> View.INVISIBLE
+                        Visibility.GONE -> View.GONE
+                    }
+                }
+                is Patch.AttachEventListener -> {
+                    val view = nodes.get(patch.nodeId) ?: continue
+                    when (patch.eventType) {
+                        EventType.CLICK -> {
+                            view.setOnClickListener {
+                                eventDispatcher(patch.nodeId, EventType.CLICK, null)
+                            }
+                        }
+                        EventType.TEXT_CHANGED -> {
+                            if (view is EditText) {
+                                view.addTextChangedListener(object : android.text.TextWatcher {
+                                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                                        if (view.tag == "PROGRAMMATIC_UPDATE") return
+                                        val textBytes = (s?.toString() ?: "").toByteArray(java.nio.charset.StandardCharsets.UTF_8)
+                                        eventDispatcher(patch.nodeId, EventType.TEXT_CHANGED, textBytes)
+                                    }
+                                    override fun afterTextChanged(s: android.text.Editable?) {}
+                                })
+                            }
+                        }
+                        EventType.PRESS_IN, EventType.PRESS_OUT -> {
+                            view.setOnTouchListener { _, event ->
+                                when (event.actionMasked) {
+                                    MotionEvent.ACTION_DOWN -> {
+                                        eventDispatcher(patch.nodeId, EventType.PRESS_IN, null)
+                                    }
+                                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                                        eventDispatcher(patch.nodeId, EventType.PRESS_OUT, null)
+                                    }
+                                }
+                                false
+                            }
+                        }
+                        EventType.LONG_PRESS -> {
+                            view.setOnLongClickListener {
+                                eventDispatcher(patch.nodeId, EventType.LONG_PRESS, null)
+                                true
+                            }
+                        }
+                        EventType.LAYOUT -> {
+                            view.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+                                val w = (right - left) / density
+                                val h = (bottom - top) / density
+                                val x = left / density
+                                val y = top / density
+                                val payload = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN)
+                                    .putFloat(x).putFloat(y).putFloat(w).putFloat(h).array()
+                                eventDispatcher(patch.nodeId, EventType.LAYOUT, payload)
+                            }
+                        }
+                        EventType.END_REACHED -> {
+                            (view as? RecyclerView)?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                                    val lm = recyclerView.layoutManager as? LinearLayoutManager ?: return
+                                    val lastVisible = lm.findLastVisibleItemPosition()
+                                    val total = lm.itemCount
+                                    if (total > 0 && lastVisible >= total - 2) {
+                                        eventDispatcher(patch.nodeId, EventType.END_REACHED, null)
+                                    }
+                                }
+                            })
+                        }
+                        EventType.VALUE_CHANGE -> {
+                            (view as? CompoundButton)?.setOnCheckedChangeListener { _, isChecked ->
+                                val payload = byteArrayOf(if (isChecked) 1 else 0)
+                                eventDispatcher(patch.nodeId, EventType.VALUE_CHANGE, payload)
+                            }
+                        }
+                        EventType.SUBMIT_EDITING -> {
+                            (view as? EditText)?.setOnEditorActionListener { _, _, _ ->
+                                val textBytes = (view.text?.toString() ?: "").toByteArray(StandardCharsets.UTF_8)
+                                eventDispatcher(patch.nodeId, EventType.SUBMIT_EDITING, textBytes)
+                                false
+                            }
+                        }
+                        EventType.REFRESH -> {
+                            (view as? SwipeRefreshLayout)?.setOnRefreshListener {
+                                eventDispatcher(patch.nodeId, EventType.REFRESH, null)
+                            }
+                        }
+                        EventType.SLIDER_CHANGE -> {
+                            (view as? SeekBar)?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                                    if (fromUser) {
+                                        val normVal = progress / 1000f
+                                        val payload = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN)
+                                            .putFloat(normVal).array()
+                                        eventDispatcher(patch.nodeId, EventType.SLIDER_CHANGE, payload)
+                                    }
+                                }
+                                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                            })
+                        }
+                        else -> {}
+                    }
+                }
+                is Patch.DetachEventListener -> {
+                    val view = nodes.get(patch.nodeId) ?: continue
+                    when (patch.eventType) {
+                        EventType.CLICK -> view.setOnClickListener(null)
+                        EventType.LONG_PRESS -> view.setOnLongClickListener(null)
+                        EventType.PRESS_IN, EventType.PRESS_OUT -> view.setOnTouchListener(null)
+                        else -> {}
+                    }
+                }
+            }
+        }
+    }
+
+    fun applyPropertyToView(nodeId: Long, view: View, prop: Property, density: Float) {
+        when (prop) {
                         is Property.BackgroundColor -> view.setBackgroundColor(prop.color)
                         is Property.TextColor -> (view as? TextView)?.setTextColor(prop.color)
                         is Property.FontSize -> (view as? TextView)?.setTextSize(
@@ -422,9 +566,9 @@ class FerrixRenderer(
                         // Wave 1 Extensions: Controlled Text & Inputs
                         is Property.ControlledText -> {
                             if (view is EditText) {
-                                val lastVer = nodeTextVersions[patch.nodeId] ?: -1L
+                                val lastVer = if (nodeId != 0L) nodeTextVersions[nodeId] ?: -1L else -1L
                                 if (prop.version >= lastVer) {
-                                    nodeTextVersions[patch.nodeId] = prop.version
+                                    if (nodeId != 0L) nodeTextVersions[nodeId] = prop.version
                                     if (view.text.toString() != prop.text) {
                                         val prevTag = view.tag
                                         view.tag = "PROGRAMMATIC_UPDATE"
@@ -631,123 +775,7 @@ class FerrixRenderer(
                         is Property.BadgeContent -> (view as? TextView)?.text = prop.content
                         is Property.GridColumns -> (view as? GridLayout)?.columnCount = prop.columns
                     }
-                }
-                is Patch.SetVisibility -> {
-                    val view = nodes.get(patch.nodeId) ?: continue
-                    view.visibility = when (patch.visibility) {
-                        Visibility.VISIBLE -> View.VISIBLE
-                        Visibility.INVISIBLE -> View.INVISIBLE
-                        Visibility.GONE -> View.GONE
-                    }
-                }
-                is Patch.AttachEventListener -> {
-                    val view = nodes.get(patch.nodeId) ?: continue
-                    when (patch.eventType) {
-                        EventType.CLICK -> {
-                            view.setOnClickListener {
-                                eventDispatcher(patch.nodeId, EventType.CLICK, null)
-                            }
-                        }
-                        EventType.TEXT_CHANGED -> {
-                            if (view is EditText) {
-                                view.addTextChangedListener(object : android.text.TextWatcher {
-                                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                                        if (view.tag == "PROGRAMMATIC_UPDATE") return
-                                        val textBytes = (s?.toString() ?: "").toByteArray(java.nio.charset.StandardCharsets.UTF_8)
-                                        eventDispatcher(patch.nodeId, EventType.TEXT_CHANGED, textBytes)
-                                    }
-                                    override fun afterTextChanged(s: android.text.Editable?) {}
-                                })
-                            }
-                        }
-                        EventType.PRESS_IN, EventType.PRESS_OUT -> {
-                            view.setOnTouchListener { _, event ->
-                                when (event.actionMasked) {
-                                    MotionEvent.ACTION_DOWN -> {
-                                        eventDispatcher(patch.nodeId, EventType.PRESS_IN, null)
-                                    }
-                                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                                        eventDispatcher(patch.nodeId, EventType.PRESS_OUT, null)
-                                    }
-                                }
-                                false
-                            }
-                        }
-                        EventType.LONG_PRESS -> {
-                            view.setOnLongClickListener {
-                                eventDispatcher(patch.nodeId, EventType.LONG_PRESS, null)
-                                true
-                            }
-                        }
-                        EventType.LAYOUT -> {
-                            view.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
-                                val w = (right - left) / density
-                                val h = (bottom - top) / density
-                                val x = left / density
-                                val y = top / density
-                                val payload = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN)
-                                    .putFloat(x).putFloat(y).putFloat(w).putFloat(h).array()
-                                eventDispatcher(patch.nodeId, EventType.LAYOUT, payload)
-                            }
-                        }
-                        EventType.END_REACHED -> {
-                            (view as? RecyclerView)?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                                    val lm = recyclerView.layoutManager as? LinearLayoutManager ?: return
-                                    val lastVisible = lm.findLastVisibleItemPosition()
-                                    val total = lm.itemCount
-                                    if (total > 0 && lastVisible >= total - 2) {
-                                        eventDispatcher(patch.nodeId, EventType.END_REACHED, null)
-                                    }
-                                }
-                            })
-                        }
-                        EventType.VALUE_CHANGE -> {
-                            (view as? CompoundButton)?.setOnCheckedChangeListener { _, isChecked ->
-                                val payload = byteArrayOf(if (isChecked) 1 else 0)
-                                eventDispatcher(patch.nodeId, EventType.VALUE_CHANGE, payload)
-                            }
-                        }
-                        EventType.SUBMIT_EDITING -> {
-                            (view as? EditText)?.setOnEditorActionListener { _, _, _ ->
-                                val textBytes = (view.text?.toString() ?: "").toByteArray(StandardCharsets.UTF_8)
-                                eventDispatcher(patch.nodeId, EventType.SUBMIT_EDITING, textBytes)
-                                false
-                            }
-                        }
-                        EventType.REFRESH -> {
-                            (view as? SwipeRefreshLayout)?.setOnRefreshListener {
-                                eventDispatcher(patch.nodeId, EventType.REFRESH, null)
-                            }
-                        }
-                        EventType.SLIDER_CHANGE -> {
-                            (view as? SeekBar)?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                                    if (fromUser) {
-                                        val normVal = progress / 1000f
-                                        val payload = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN)
-                                            .putFloat(normVal).array()
-                                        eventDispatcher(patch.nodeId, EventType.SLIDER_CHANGE, payload)
-                                    }
-                                }
-                                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-                            })
-                        }
-                        else -> {}
-                    }
-                }
-                is Patch.DetachEventListener -> {
-                    val view = nodes.get(patch.nodeId) ?: continue
-                    when (patch.eventType) {
-                        EventType.CLICK -> view.setOnClickListener(null)
-                        EventType.LONG_PRESS -> view.setOnLongClickListener(null)
-                        EventType.PRESS_IN, EventType.PRESS_OUT -> view.setOnTouchListener(null)
-                        else -> {}
-                    }
-                }
-            }
-        }
+                
     }
+
 }

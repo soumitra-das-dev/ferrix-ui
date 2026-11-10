@@ -377,6 +377,733 @@ impl Property {
             Self::GridColumns(_) => 76,
         }
     }
+
+    pub fn encode(&self, payload: &mut Vec<u8>) {
+        payload.extend_from_slice(&self.prop_id().to_le_bytes());
+        match self {
+            Property::BackgroundColor(c) | Property::TextColor(c) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&c.to_le_bytes());
+            }
+            Property::FontSize(s) | Property::Spacing(s) | Property::CornerRadius(s) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&s.to_le_bytes());
+            }
+            Property::Padding {
+                left,
+                top,
+                right,
+                bottom,
+            } => {
+                payload.extend_from_slice(&(16u16).to_le_bytes());
+                payload.extend_from_slice(&left.to_le_bytes());
+                payload.extend_from_slice(&top.to_le_bytes());
+                payload.extend_from_slice(&right.to_le_bytes());
+                payload.extend_from_slice(&bottom.to_le_bytes());
+            }
+            Property::Enabled(en) => {
+                payload.extend_from_slice(&(1u16).to_le_bytes());
+                payload.push(if *en { 1 } else { 0 });
+            }
+            Property::ImageUrl(url) => {
+                let bytes = url.as_bytes();
+                payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                payload.extend_from_slice(bytes);
+            }
+            Property::AnimateAlpha {
+                target,
+                duration_ms,
+            }
+            | Property::AnimateScale {
+                target,
+                duration_ms,
+            }
+            | Property::AnimateTranslationY {
+                target,
+                duration_ms,
+            } => {
+                payload.extend_from_slice(&(8u16).to_le_bytes());
+                payload.extend_from_slice(&target.to_le_bytes());
+                payload.extend_from_slice(&duration_ms.to_le_bytes());
+            }
+            Property::ContentDescription(desc)
+            | Property::AccessibilityRole(desc)
+            | Property::Hint(desc) => {
+                let bytes = desc.as_bytes();
+                payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                payload.extend_from_slice(bytes);
+            }
+            Property::AccessibilityHeading(h) => {
+                payload.extend_from_slice(&(1u16).to_le_bytes());
+                payload.push(if *h { 1 } else { 0 });
+            }
+            Property::Opacity(op)
+            | Property::Elevation(op)
+            | Property::LineHeight(op)
+            | Property::LetterSpacing(op) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&op.to_le_bytes());
+            }
+            Property::BorderWidth {
+                left,
+                top,
+                right,
+                bottom,
+            } => {
+                payload.extend_from_slice(&(16u16).to_le_bytes());
+                payload.extend_from_slice(&left.to_le_bytes());
+                payload.extend_from_slice(&top.to_le_bytes());
+                payload.extend_from_slice(&right.to_le_bytes());
+                payload.extend_from_slice(&bottom.to_le_bytes());
+            }
+            Property::BorderColor(c) | Property::RippleColor(c) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&c.to_le_bytes());
+            }
+            Property::BorderRadius {
+                top_left,
+                top_right,
+                bottom_right,
+                bottom_left,
+            } => {
+                payload.extend_from_slice(&(16u16).to_le_bytes());
+                payload.extend_from_slice(&top_left.to_le_bytes());
+                payload.extend_from_slice(&top_right.to_le_bytes());
+                payload.extend_from_slice(&bottom_right.to_le_bytes());
+                payload.extend_from_slice(&bottom_left.to_le_bytes());
+            }
+            Property::Transform {
+                translate_x,
+                translate_y,
+                scale_x,
+                scale_y,
+                rotate_deg,
+            } => {
+                payload.extend_from_slice(&(20u16).to_le_bytes());
+                payload.extend_from_slice(&translate_x.to_le_bytes());
+                payload.extend_from_slice(&translate_y.to_le_bytes());
+                payload.extend_from_slice(&scale_x.to_le_bytes());
+                payload.extend_from_slice(&scale_y.to_le_bytes());
+                payload.extend_from_slice(&rotate_deg.to_le_bytes());
+            }
+            Property::FontWeight(w) => {
+                payload.extend_from_slice(&(2u16).to_le_bytes());
+                payload.extend_from_slice(&w.to_le_bytes());
+            }
+            Property::FontStyle(s)
+            | Property::TextAlign(s)
+            | Property::TextDecoration(s)
+            | Property::ImportantForAccessibility(s)
+            | Property::KeyboardType(s)
+            | Property::ReturnKeyType(s)
+            | Property::AutoCapitalize(s)
+            | Property::ImageResizeMode(s)
+            | Property::IndicatorSize(s)
+            | Property::ModalAnimationType(s) => {
+                payload.extend_from_slice(&(1u16).to_le_bytes());
+                payload.push(*s);
+            }
+            Property::NumberOfLines(n) | Property::MaxLength(n) | Property::ItemCount(n) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&n.to_le_bytes());
+            }
+            Property::TestId(s)
+            | Property::AccessibilityLabel(s)
+            | Property::AccessibilityHint(s) => {
+                let bytes = s.as_bytes();
+                payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                payload.extend_from_slice(bytes);
+            }
+            Property::AccessibilityState {
+                disabled,
+                selected,
+                checked,
+                busy,
+                expanded,
+            } => {
+                payload.extend_from_slice(&(5u16).to_le_bytes());
+                payload.push(if *disabled { 1 } else { 0 });
+                payload.push(if *selected { 1 } else { 0 });
+                payload.push(*checked);
+                payload.push(if *busy { 1 } else { 0 });
+                payload.push(*expanded);
+            }
+            Property::ControlledText { version, text } => {
+                let text_bytes = text.as_bytes();
+                let len = 4 + text_bytes.len();
+                payload.extend_from_slice(&(len as u16).to_le_bytes());
+                payload.extend_from_slice(&version.to_le_bytes());
+                payload.extend_from_slice(text_bytes);
+            }
+            Property::Placeholder(s) => {
+                let bytes = s.as_bytes();
+                payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                payload.extend_from_slice(bytes);
+            }
+            Property::PlaceholderTextColor(c)
+            | Property::TintColor(c)
+            | Property::ThumbColor(c)
+            | Property::IndicatorColor(c)
+            | Property::ProgressBackgroundColor(c) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&c.to_le_bytes());
+            }
+            Property::SecureTextEntry(b)
+            | Property::Multiline(b)
+            | Property::AutoCorrect(b)
+            | Property::Editable(b)
+            | Property::ScrollHorizontal(b)
+            | Property::PagingEnabled(b)
+            | Property::ShowsScrollIndicator(b)
+            | Property::SwitchValue(b)
+            | Property::Animating(b)
+            | Property::ModalVisible(b)
+            | Property::ModalTransparent(b)
+            | Property::Refreshing(b)
+            | Property::Checked(b) => {
+                payload.extend_from_slice(&(1u16).to_le_bytes());
+                payload.push(if *b { 1 } else { 0 });
+            }
+            Property::Selection { start, end } => {
+                payload.extend_from_slice(&(8u16).to_le_bytes());
+                payload.extend_from_slice(&start.to_le_bytes());
+                payload.extend_from_slice(&end.to_le_bytes());
+            }
+            Property::BlurRadius(r)
+            | Property::ItemHeight(r)
+            | Property::SliderValue(r)
+            | Property::Progress(r)
+            | Property::IconSize(r) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&r.to_le_bytes());
+            }
+            Property::HitSlop {
+                left,
+                top,
+                right,
+                bottom,
+            } => {
+                payload.extend_from_slice(&(16u16).to_le_bytes());
+                payload.extend_from_slice(&left.to_le_bytes());
+                payload.extend_from_slice(&top.to_le_bytes());
+                payload.extend_from_slice(&right.to_le_bytes());
+                payload.extend_from_slice(&bottom.to_le_bytes());
+            }
+            Property::ContentOffset { x, y } => {
+                payload.extend_from_slice(&(8u16).to_le_bytes());
+                payload.extend_from_slice(&x.to_le_bytes());
+                payload.extend_from_slice(&y.to_le_bytes());
+            }
+            Property::TrackColor { active, inactive } => {
+                payload.extend_from_slice(&(8u16).to_le_bytes());
+                payload.extend_from_slice(&active.to_le_bytes());
+                payload.extend_from_slice(&inactive.to_le_bytes());
+            }
+            Property::SliderRange { min, max, step } => {
+                payload.extend_from_slice(&(12u16).to_le_bytes());
+                payload.extend_from_slice(&min.to_le_bytes());
+                payload.extend_from_slice(&max.to_le_bytes());
+                payload.extend_from_slice(&step.to_le_bytes());
+            }
+            Property::GradientColors {
+                start_color,
+                end_color,
+                angle_deg,
+            } => {
+                payload.extend_from_slice(&(12u16).to_le_bytes());
+                payload.extend_from_slice(&start_color.to_le_bytes());
+                payload.extend_from_slice(&end_color.to_le_bytes());
+                payload.extend_from_slice(&angle_deg.to_le_bytes());
+            }
+            Property::IconName(s) | Property::BadgeContent(s) => {
+                let bytes = s.as_bytes();
+                payload.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+                payload.extend_from_slice(bytes);
+            }
+            Property::GridColumns(u) => {
+                payload.extend_from_slice(&(4u16).to_le_bytes());
+                payload.extend_from_slice(&u.to_le_bytes());
+            }
+        }
+    }
+
+    pub fn decode(bytes: &[u8], mut offset: usize) -> Result<(Self, usize), ProtocolError> {
+        if offset + 4 > bytes.len() {
+            return Err(ProtocolError::UnexpectedEof {
+                offset,
+                expected: offset + 4,
+            });
+        }
+        let prop_id = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
+        offset += 2;
+        let val_len = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap()) as usize;
+        offset += 2;
+        if offset + val_len > bytes.len() {
+            return Err(ProtocolError::UnexpectedEof {
+                offset,
+                expected: offset + val_len,
+            });
+        }
+        let prop_slice = &bytes[offset..offset + val_len];
+        offset += val_len;
+
+        let property =
+            match prop_id {
+                1 => Property::BackgroundColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                2 => Property::TextColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                3 => {
+                    Property::FontSize(f32::from_le_bytes(prop_slice.try_into().map_err(|_| {
+                        ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        }
+                    })?))
+                }
+                4 => {
+                    if prop_slice.len() < 16 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 16,
+                        });
+                    }
+                    let left = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let top = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    let right = f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
+                    let bottom = f32::from_le_bytes(prop_slice[12..16].try_into().unwrap());
+                    Property::Padding {
+                        left,
+                        top,
+                        right,
+                        bottom,
+                    }
+                }
+                5 => {
+                    Property::Spacing(f32::from_le_bytes(prop_slice.try_into().map_err(|_| {
+                        ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        }
+                    })?))
+                }
+                6 => Property::CornerRadius(f32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                7 => Property::Enabled(prop_slice.first().copied().unwrap_or(0) != 0),
+                8 => Property::ImageUrl(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                9 => {
+                    if prop_slice.len() < 8 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 8,
+                        });
+                    }
+                    let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let duration_ms = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    Property::AnimateAlpha {
+                        target,
+                        duration_ms,
+                    }
+                }
+                10 => {
+                    if prop_slice.len() < 8 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 8,
+                        });
+                    }
+                    let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let duration_ms = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    Property::AnimateScale {
+                        target,
+                        duration_ms,
+                    }
+                }
+                11 => {
+                    if prop_slice.len() < 8 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 8,
+                        });
+                    }
+                    let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let duration_ms = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    Property::AnimateTranslationY {
+                        target,
+                        duration_ms,
+                    }
+                }
+                12 => Property::ContentDescription(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                13 => Property::AccessibilityRole(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                14 => Property::AccessibilityHeading(prop_slice.first().copied().unwrap_or(0) != 0),
+                15 => Property::Hint(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                16 => {
+                    Property::Opacity(f32::from_le_bytes(prop_slice.try_into().map_err(|_| {
+                        ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        }
+                    })?))
+                }
+                17 => {
+                    if prop_slice.len() < 16 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 16,
+                        });
+                    }
+                    Property::BorderWidth {
+                        left: f32::from_le_bytes(prop_slice[0..4].try_into().unwrap()),
+                        top: f32::from_le_bytes(prop_slice[4..8].try_into().unwrap()),
+                        right: f32::from_le_bytes(prop_slice[8..12].try_into().unwrap()),
+                        bottom: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
+                    }
+                }
+                18 => Property::BorderColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                19 => {
+                    if prop_slice.len() < 16 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 16,
+                        });
+                    }
+                    Property::BorderRadius {
+                        top_left: f32::from_le_bytes(prop_slice[0..4].try_into().unwrap()),
+                        top_right: f32::from_le_bytes(prop_slice[4..8].try_into().unwrap()),
+                        bottom_right: f32::from_le_bytes(prop_slice[8..12].try_into().unwrap()),
+                        bottom_left: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
+                    }
+                }
+                20 => Property::Elevation(f32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                21 => {
+                    if prop_slice.len() < 20 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 20,
+                        });
+                    }
+                    Property::Transform {
+                        translate_x: f32::from_le_bytes(prop_slice[0..4].try_into().unwrap()),
+                        translate_y: f32::from_le_bytes(prop_slice[4..8].try_into().unwrap()),
+                        scale_x: f32::from_le_bytes(prop_slice[8..12].try_into().unwrap()),
+                        scale_y: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
+                        rotate_deg: f32::from_le_bytes(prop_slice[16..20].try_into().unwrap()),
+                    }
+                }
+                22 => Property::FontWeight(u16::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 2,
+                    },
+                )?)),
+                23 => Property::FontStyle(prop_slice.first().copied().unwrap_or(0)),
+                24 => Property::LineHeight(f32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                25 => Property::LetterSpacing(f32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                26 => Property::TextAlign(prop_slice.first().copied().unwrap_or(0)),
+                27 => Property::TextDecoration(prop_slice.first().copied().unwrap_or(0)),
+                28 => Property::NumberOfLines(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                29 => Property::TestId(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                30 => Property::AccessibilityLabel(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                31 => Property::AccessibilityHint(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                32 => {
+                    if prop_slice.len() < 5 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 5,
+                        });
+                    }
+                    Property::AccessibilityState {
+                        disabled: prop_slice[0] != 0,
+                        selected: prop_slice[1] != 0,
+                        checked: prop_slice[2],
+                        busy: prop_slice[3] != 0,
+                        expanded: prop_slice[4],
+                    }
+                }
+                33 => Property::ImportantForAccessibility(prop_slice.first().copied().unwrap_or(0)),
+                34 => Property::RippleColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                35 => {
+                    if prop_slice.len() < 16 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 16,
+                        });
+                    }
+                    Property::HitSlop {
+                        left: f32::from_le_bytes(prop_slice[0..4].try_into().unwrap()),
+                        top: f32::from_le_bytes(prop_slice[4..8].try_into().unwrap()),
+                        right: f32::from_le_bytes(prop_slice[8..12].try_into().unwrap()),
+                        bottom: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
+                    }
+                }
+                36 => {
+                    if prop_slice.len() < 4 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        });
+                    }
+                    let version = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let text = std::str::from_utf8(&prop_slice[4..])
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string();
+                    Property::ControlledText { version, text }
+                }
+                37 => Property::Placeholder(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                38 => Property::PlaceholderTextColor(u32::from_le_bytes(
+                    prop_slice
+                        .try_into()
+                        .map_err(|_| ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        })?,
+                )),
+                39 => Property::SecureTextEntry(prop_slice.first().copied().unwrap_or(0) != 0),
+                40 => Property::KeyboardType(prop_slice.first().copied().unwrap_or(0)),
+                41 => Property::ReturnKeyType(prop_slice.first().copied().unwrap_or(0)),
+                42 => Property::MaxLength(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                43 => Property::Multiline(prop_slice.first().copied().unwrap_or(0) != 0),
+                44 => Property::AutoCapitalize(prop_slice.first().copied().unwrap_or(0)),
+                45 => Property::AutoCorrect(prop_slice.first().copied().unwrap_or(0) != 0),
+                46 => Property::Editable(prop_slice.first().copied().unwrap_or(0) != 0),
+                47 => {
+                    if prop_slice.len() < 8 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 8,
+                        });
+                    }
+                    let start = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let end = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    Property::Selection { start, end }
+                }
+                48 => Property::ImageResizeMode(prop_slice.first().copied().unwrap_or(0)),
+                49 => Property::BlurRadius(f32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                50 => Property::TintColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                51 => Property::ScrollHorizontal(prop_slice.first().copied().unwrap_or(0) != 0),
+                52 => Property::PagingEnabled(prop_slice.first().copied().unwrap_or(0) != 0),
+                53 => Property::ShowsScrollIndicator(prop_slice.first().copied().unwrap_or(0) != 0),
+                54 => {
+                    if prop_slice.len() < 8 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 8,
+                        });
+                    }
+                    let x = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let y = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    Property::ContentOffset { x, y }
+                }
+                55 => Property::ItemCount(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                56 => Property::ItemHeight(f32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                57 => Property::SwitchValue(prop_slice.first().copied().unwrap_or(0) != 0),
+                58 => {
+                    if prop_slice.len() < 8 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 8,
+                        });
+                    }
+                    let active = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let inactive = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    Property::TrackColor { active, inactive }
+                }
+                59 => Property::ThumbColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                60 => Property::IndicatorColor(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                61 => Property::IndicatorSize(prop_slice.first().copied().unwrap_or(0)),
+                62 => Property::Animating(prop_slice.first().copied().unwrap_or(0) != 0),
+                63 => Property::ModalVisible(prop_slice.first().copied().unwrap_or(0) != 0),
+                64 => Property::ModalAnimationType(prop_slice.first().copied().unwrap_or(0)),
+                65 => Property::ModalTransparent(prop_slice.first().copied().unwrap_or(0) != 0),
+                66 => Property::Refreshing(prop_slice.first().copied().unwrap_or(0) != 0),
+                67 => Property::ProgressBackgroundColor(u32::from_le_bytes(
+                    prop_slice
+                        .try_into()
+                        .map_err(|_| ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        })?,
+                )),
+                68 => Property::Checked(prop_slice.first().copied().unwrap_or(0) != 0),
+                69 => Property::SliderValue(f32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                70 => {
+                    if prop_slice.len() < 12 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 12,
+                        });
+                    }
+                    let min = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let max = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    let step = f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
+                    Property::SliderRange { min, max, step }
+                }
+                71 => {
+                    Property::Progress(f32::from_le_bytes(prop_slice.try_into().map_err(|_| {
+                        ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        }
+                    })?))
+                }
+                72 => {
+                    if prop_slice.len() < 12 {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 12,
+                        });
+                    }
+                    let start_color = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
+                    let end_color = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
+                    let angle_deg = f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
+                    Property::GradientColors {
+                        start_color,
+                        end_color,
+                        angle_deg,
+                    }
+                }
+                73 => Property::IconName(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                74 => {
+                    Property::IconSize(f32::from_le_bytes(prop_slice.try_into().map_err(|_| {
+                        ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: 4,
+                        }
+                    })?))
+                }
+                75 => Property::BadgeContent(
+                    std::str::from_utf8(prop_slice)
+                        .map_err(|_| ProtocolError::InvalidUtf8)?
+                        .to_string(),
+                ),
+                76 => Property::GridColumns(u32::from_le_bytes(prop_slice.try_into().map_err(
+                    |_| ProtocolError::UnexpectedEof {
+                        offset,
+                        expected: 4,
+                    },
+                )?)),
+                _ => return Err(ProtocolError::UnknownPropertyId(prop_id)),
+            };
+        Ok((property, 4 + val_len))
+    }
 }
 
 /// Protocol patch opcodes.
@@ -394,6 +1121,9 @@ pub enum Opcode {
     SetVisibility = 9,
     AttachEventListener = 10,
     DetachEventListener = 11,
+    RegisterStyles = 12,
+    SetStyle = 13,
+    SetStyleList = 14,
 }
 
 impl Opcode {
@@ -410,6 +1140,9 @@ impl Opcode {
             9 => Some(Self::SetVisibility),
             10 => Some(Self::AttachEventListener),
             11 => Some(Self::DetachEventListener),
+            12 => Some(Self::RegisterStyles),
+            13 => Some(Self::SetStyle),
+            14 => Some(Self::SetStyleList),
             _ => None,
         }
     }
@@ -508,6 +1241,17 @@ pub enum Patch {
     DetachEventListener {
         node_id: NodeId,
         event_type: EventType,
+    },
+    RegisterStyles {
+        styles: Vec<(u32, Vec<Property>)>,
+    },
+    SetStyle {
+        node_id: NodeId,
+        style_id: u32,
+    },
+    SetStyleList {
+        node_id: NodeId,
+        style_ids: Vec<u32>,
     },
 }
 
@@ -899,6 +1643,30 @@ impl PatchBatch {
                     payload.extend_from_slice(&node_id.raw().to_le_bytes());
                     payload.extend_from_slice(&(*event_type as u16).to_le_bytes());
                 }
+                Patch::RegisterStyles { styles } => {
+                    payload.push(Opcode::RegisterStyles as u8);
+                    payload.extend_from_slice(&(styles.len() as u32).to_le_bytes());
+                    for (style_id, props) in styles {
+                        payload.extend_from_slice(&style_id.to_le_bytes());
+                        payload.extend_from_slice(&(props.len() as u16).to_le_bytes());
+                        for prop in props {
+                            prop.encode(&mut payload);
+                        }
+                    }
+                }
+                Patch::SetStyle { node_id, style_id } => {
+                    payload.push(Opcode::SetStyle as u8);
+                    payload.extend_from_slice(&node_id.raw().to_le_bytes());
+                    payload.extend_from_slice(&style_id.to_le_bytes());
+                }
+                Patch::SetStyleList { node_id, style_ids } => {
+                    payload.push(Opcode::SetStyleList as u8);
+                    payload.extend_from_slice(&node_id.raw().to_le_bytes());
+                    payload.extend_from_slice(&(style_ids.len() as u16).to_le_bytes());
+                    for sid in style_ids {
+                        payload.extend_from_slice(&sid.to_le_bytes());
+                    }
+                }
             }
         }
 
@@ -1106,552 +1874,18 @@ impl PatchBatch {
                     });
                 }
                 Opcode::SetProperty => {
-                    if offset + 12 > bytes.len() {
+                    if offset + 8 > bytes.len() {
                         return Err(ProtocolError::UnexpectedEof {
                             offset,
-                            expected: offset + 12,
+                            expected: offset + 8,
                         });
                     }
                     let node_id = NodeId(u64::from_le_bytes(
                         bytes[offset..offset + 8].try_into().unwrap(),
                     ));
                     offset += 8;
-                    let prop_id = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
-                    offset += 2;
-                    let val_len =
-                        u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap()) as usize;
-                    offset += 2;
-                    if offset + val_len > bytes.len() {
-                        return Err(ProtocolError::UnexpectedEof {
-                            offset,
-                            expected: offset + val_len,
-                        });
-                    }
-                    let prop_slice = &bytes[offset..offset + val_len];
-                    offset += val_len;
-
-                    let property = match prop_id {
-                        1 => Property::BackgroundColor(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        2 => {
-                            Property::TextColor(u32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        3 => {
-                            Property::FontSize(f32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        4 => {
-                            if prop_slice.len() < 16 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 16,
-                                });
-                            }
-                            let left = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let top = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            let right = f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
-                            let bottom = f32::from_le_bytes(prop_slice[12..16].try_into().unwrap());
-                            Property::Padding {
-                                left,
-                                top,
-                                right,
-                                bottom,
-                            }
-                        }
-                        5 => Property::Spacing(f32::from_le_bytes(prop_slice.try_into().map_err(
-                            |_| ProtocolError::UnexpectedEof {
-                                offset,
-                                expected: 4,
-                            },
-                        )?)),
-                        6 => Property::CornerRadius(f32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        7 => Property::Enabled(prop_slice.first().copied().unwrap_or(0) != 0),
-                        8 => Property::ImageUrl(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        9 => {
-                            if prop_slice.len() < 8 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 8,
-                                });
-                            }
-                            let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let duration_ms =
-                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            Property::AnimateAlpha {
-                                target,
-                                duration_ms,
-                            }
-                        }
-                        10 => {
-                            if prop_slice.len() < 8 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 8,
-                                });
-                            }
-                            let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let duration_ms =
-                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            Property::AnimateScale {
-                                target,
-                                duration_ms,
-                            }
-                        }
-                        11 => {
-                            if prop_slice.len() < 8 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 8,
-                                });
-                            }
-                            let target = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let duration_ms =
-                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            Property::AnimateTranslationY {
-                                target,
-                                duration_ms,
-                            }
-                        }
-                        12 => Property::ContentDescription(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        13 => Property::AccessibilityRole(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        14 => Property::AccessibilityHeading(
-                            prop_slice.first().copied().unwrap_or(0) != 0,
-                        ),
-                        15 => Property::Hint(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        16 => {
-                            Property::Opacity(f32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        17 => {
-                            if prop_slice.len() < 16 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 16,
-                                });
-                            }
-                            Property::BorderWidth {
-                                left: f32::from_le_bytes(prop_slice[0..4].try_into().unwrap()),
-                                top: f32::from_le_bytes(prop_slice[4..8].try_into().unwrap()),
-                                right: f32::from_le_bytes(prop_slice[8..12].try_into().unwrap()),
-                                bottom: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
-                            }
-                        }
-                        18 => Property::BorderColor(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        19 => {
-                            if prop_slice.len() < 16 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 16,
-                                });
-                            }
-                            Property::BorderRadius {
-                                top_left: f32::from_le_bytes(prop_slice[0..4].try_into().unwrap()),
-                                top_right: f32::from_le_bytes(prop_slice[4..8].try_into().unwrap()),
-                                bottom_right: f32::from_le_bytes(
-                                    prop_slice[8..12].try_into().unwrap(),
-                                ),
-                                bottom_left: f32::from_le_bytes(
-                                    prop_slice[12..16].try_into().unwrap(),
-                                ),
-                            }
-                        }
-                        20 => {
-                            Property::Elevation(f32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        21 => {
-                            if prop_slice.len() < 20 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 20,
-                                });
-                            }
-                            Property::Transform {
-                                translate_x: f32::from_le_bytes(
-                                    prop_slice[0..4].try_into().unwrap(),
-                                ),
-                                translate_y: f32::from_le_bytes(
-                                    prop_slice[4..8].try_into().unwrap(),
-                                ),
-                                scale_x: f32::from_le_bytes(prop_slice[8..12].try_into().unwrap()),
-                                scale_y: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
-                                rotate_deg: f32::from_le_bytes(
-                                    prop_slice[16..20].try_into().unwrap(),
-                                ),
-                            }
-                        }
-                        22 => Property::FontWeight(u16::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 2,
-                                })?,
-                        )),
-                        23 => Property::FontStyle(prop_slice.first().copied().unwrap_or(0)),
-                        24 => Property::LineHeight(f32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        25 => Property::LetterSpacing(f32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        26 => Property::TextAlign(prop_slice.first().copied().unwrap_or(0)),
-                        27 => Property::TextDecoration(prop_slice.first().copied().unwrap_or(0)),
-                        28 => Property::NumberOfLines(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        29 => Property::TestId(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        30 => Property::AccessibilityLabel(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        31 => Property::AccessibilityHint(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        32 => {
-                            if prop_slice.len() < 5 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 5,
-                                });
-                            }
-                            Property::AccessibilityState {
-                                disabled: prop_slice[0] != 0,
-                                selected: prop_slice[1] != 0,
-                                checked: prop_slice[2],
-                                busy: prop_slice[3] != 0,
-                                expanded: prop_slice[4],
-                            }
-                        }
-                        33 => Property::ImportantForAccessibility(
-                            prop_slice.first().copied().unwrap_or(0),
-                        ),
-                        34 => Property::RippleColor(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        35 => {
-                            if prop_slice.len() < 16 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 16,
-                                });
-                            }
-                            Property::HitSlop {
-                                left: f32::from_le_bytes(prop_slice[0..4].try_into().unwrap()),
-                                top: f32::from_le_bytes(prop_slice[4..8].try_into().unwrap()),
-                                right: f32::from_le_bytes(prop_slice[8..12].try_into().unwrap()),
-                                bottom: f32::from_le_bytes(prop_slice[12..16].try_into().unwrap()),
-                            }
-                        }
-                        36 => {
-                            if prop_slice.len() < 4 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                });
-                            }
-                            let version = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let text = std::str::from_utf8(&prop_slice[4..])
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string();
-                            Property::ControlledText { version, text }
-                        }
-                        37 => Property::Placeholder(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        38 => Property::PlaceholderTextColor(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        39 => {
-                            Property::SecureTextEntry(prop_slice.first().copied().unwrap_or(0) != 0)
-                        }
-                        40 => Property::KeyboardType(prop_slice.first().copied().unwrap_or(0)),
-                        41 => Property::ReturnKeyType(prop_slice.first().copied().unwrap_or(0)),
-                        42 => {
-                            Property::MaxLength(u32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        43 => Property::Multiline(prop_slice.first().copied().unwrap_or(0) != 0),
-                        44 => Property::AutoCapitalize(prop_slice.first().copied().unwrap_or(0)),
-                        45 => Property::AutoCorrect(prop_slice.first().copied().unwrap_or(0) != 0),
-                        46 => Property::Editable(prop_slice.first().copied().unwrap_or(0) != 0),
-                        47 => {
-                            if prop_slice.len() < 8 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 8,
-                                });
-                            }
-                            let start = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let end = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            Property::Selection { start, end }
-                        }
-                        48 => Property::ImageResizeMode(prop_slice.first().copied().unwrap_or(0)),
-                        49 => Property::BlurRadius(f32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        50 => {
-                            Property::TintColor(u32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        51 => Property::ScrollHorizontal(
-                            prop_slice.first().copied().unwrap_or(0) != 0,
-                        ),
-                        52 => {
-                            Property::PagingEnabled(prop_slice.first().copied().unwrap_or(0) != 0)
-                        }
-                        53 => Property::ShowsScrollIndicator(
-                            prop_slice.first().copied().unwrap_or(0) != 0,
-                        ),
-                        54 => {
-                            if prop_slice.len() < 8 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 8,
-                                });
-                            }
-                            let x = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let y = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            Property::ContentOffset { x, y }
-                        }
-                        55 => {
-                            Property::ItemCount(u32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        56 => Property::ItemHeight(f32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        57 => Property::SwitchValue(prop_slice.first().copied().unwrap_or(0) != 0),
-                        58 => {
-                            if prop_slice.len() < 8 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 8,
-                                });
-                            }
-                            let active = u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let inactive = u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            Property::TrackColor { active, inactive }
-                        }
-                        59 => Property::ThumbColor(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        60 => Property::IndicatorColor(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        61 => Property::IndicatorSize(prop_slice.first().copied().unwrap_or(0)),
-                        62 => Property::Animating(prop_slice.first().copied().unwrap_or(0) != 0),
-                        63 => Property::ModalVisible(prop_slice.first().copied().unwrap_or(0) != 0),
-                        64 => {
-                            Property::ModalAnimationType(prop_slice.first().copied().unwrap_or(0))
-                        }
-                        65 => Property::ModalTransparent(
-                            prop_slice.first().copied().unwrap_or(0) != 0,
-                        ),
-                        66 => Property::Refreshing(prop_slice.first().copied().unwrap_or(0) != 0),
-                        67 => Property::ProgressBackgroundColor(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        68 => Property::Checked(prop_slice.first().copied().unwrap_or(0) != 0),
-                        69 => Property::SliderValue(f32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        70 => {
-                            if prop_slice.len() < 12 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 12,
-                                });
-                            }
-                            let min = f32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let max = f32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            let step = f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
-                            Property::SliderRange { min, max, step }
-                        }
-                        71 => {
-                            Property::Progress(f32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        72 => {
-                            if prop_slice.len() < 12 {
-                                return Err(ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 12,
-                                });
-                            }
-                            let start_color =
-                                u32::from_le_bytes(prop_slice[0..4].try_into().unwrap());
-                            let end_color =
-                                u32::from_le_bytes(prop_slice[4..8].try_into().unwrap());
-                            let angle_deg =
-                                f32::from_le_bytes(prop_slice[8..12].try_into().unwrap());
-                            Property::GradientColors {
-                                start_color,
-                                end_color,
-                                angle_deg,
-                            }
-                        }
-                        73 => Property::IconName(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        74 => {
-                            Property::IconSize(f32::from_le_bytes(prop_slice.try_into().map_err(
-                                |_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                },
-                            )?))
-                        }
-                        75 => Property::BadgeContent(
-                            std::str::from_utf8(prop_slice)
-                                .map_err(|_| ProtocolError::InvalidUtf8)?
-                                .to_string(),
-                        ),
-                        76 => Property::GridColumns(u32::from_le_bytes(
-                            prop_slice
-                                .try_into()
-                                .map_err(|_| ProtocolError::UnexpectedEof {
-                                    offset,
-                                    expected: 4,
-                                })?,
-                        )),
-                        _ => return Err(ProtocolError::UnknownPropertyId(prop_id)),
-                    };
+                    let (property, prop_len) = Property::decode(bytes, offset)?;
+                    offset += prop_len;
                     patches.push(Patch::SetProperty { node_id, property });
                 }
                 Opcode::SetVisibility => {
@@ -1713,6 +1947,85 @@ impl PatchBatch {
                         node_id,
                         event_type,
                     });
+                }
+                Opcode::RegisterStyles => {
+                    if offset + 4 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + 4,
+                        });
+                    }
+                    let style_count =
+                        u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap()) as usize;
+                    offset += 4;
+                    let mut styles = Vec::with_capacity(style_count);
+                    for _ in 0..style_count {
+                        if offset + 6 > bytes.len() {
+                            return Err(ProtocolError::UnexpectedEof {
+                                offset,
+                                expected: offset + 6,
+                            });
+                        }
+                        let style_id =
+                            u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+                        offset += 4;
+                        let prop_count =
+                            u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap())
+                                as usize;
+                        offset += 2;
+                        let mut props = Vec::with_capacity(prop_count);
+                        for _ in 0..prop_count {
+                            let (property, prop_len) = Property::decode(bytes, offset)?;
+                            offset += prop_len;
+                            props.push(property);
+                        }
+                        styles.push((style_id, props));
+                    }
+                    patches.push(Patch::RegisterStyles { styles });
+                }
+                Opcode::SetStyle => {
+                    if offset + 12 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + 12,
+                        });
+                    }
+                    let node_id = NodeId(u64::from_le_bytes(
+                        bytes[offset..offset + 8].try_into().unwrap(),
+                    ));
+                    offset += 8;
+                    let style_id =
+                        u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+                    offset += 4;
+                    patches.push(Patch::SetStyle { node_id, style_id });
+                }
+                Opcode::SetStyleList => {
+                    if offset + 10 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + 10,
+                        });
+                    }
+                    let node_id = NodeId(u64::from_le_bytes(
+                        bytes[offset..offset + 8].try_into().unwrap(),
+                    ));
+                    offset += 8;
+                    let style_count =
+                        u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap()) as usize;
+                    offset += 2;
+                    if offset + style_count * 4 > bytes.len() {
+                        return Err(ProtocolError::UnexpectedEof {
+                            offset,
+                            expected: offset + style_count * 4,
+                        });
+                    }
+                    let mut style_ids = Vec::with_capacity(style_count);
+                    for _ in 0..style_count {
+                        let sid = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+                        offset += 4;
+                        style_ids.push(sid);
+                    }
+                    patches.push(Patch::SetStyleList { node_id, style_ids });
                 }
             }
         }
@@ -2648,6 +2961,42 @@ mod tests {
 
         let encoded = batch.encode();
         let decoded = PatchBatch::decode(&encoded).expect("failed to decode wave 2 patch batch");
+        assert_eq!(batch, decoded);
+    }
+
+    #[test]
+    fn test_style_registry_patches_round_trip() {
+        let mut batch = PatchBatch::new();
+
+        // 1. RegisterStyles
+        let style1_props = vec![
+            Property::BackgroundColor(0xFF1E293B),
+            Property::CornerRadius(8.0),
+            Property::Opacity(0.95),
+        ];
+        let style2_props = vec![
+            Property::TextColor(0xFFFFFFFF),
+            Property::FontSize(16.0),
+            Property::FontWeight(600),
+        ];
+        batch.push(Patch::RegisterStyles {
+            styles: vec![(101, style1_props), (102, style2_props)],
+        });
+
+        // 2. SetStyle
+        batch.push(Patch::SetStyle {
+            node_id: NodeId(5),
+            style_id: 101,
+        });
+
+        // 3. SetStyleList (cascade merge)
+        batch.push(Patch::SetStyleList {
+            node_id: NodeId(6),
+            style_ids: vec![101, 102],
+        });
+
+        let encoded = batch.encode();
+        let decoded = PatchBatch::decode(&encoded).expect("failed to decode style registry batch");
         assert_eq!(batch, decoded);
     }
 }

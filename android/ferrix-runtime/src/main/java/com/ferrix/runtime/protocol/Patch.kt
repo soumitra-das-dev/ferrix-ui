@@ -21,4 +21,7 @@ sealed class Patch {
     data class SetVisibility(val nodeId: Long, val visibility: Visibility) : Patch()
     data class AttachEventListener(val nodeId: Long, val eventType: EventType) : Patch()
     data class DetachEventListener(val nodeId: Long, val eventType: EventType) : Patch()
+    data class RegisterStyles(val styles: List<Pair<Int, List<Property>>>) : Patch()
+    data class SetStyle(val nodeId: Long, val styleId: Int) : Patch()
+    data class SetStyleList(val nodeId: Long, val styleIds: List<Int>) : Patch()
 }

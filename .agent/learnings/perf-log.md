@@ -9,3 +9,6 @@
 | 2026-11-09 | M7: Production | Signal Propagation | React state: 200-1000 µs | **510.74 ns** | ~1000x | Fine-grained dependency tracking |
 | 2026-11-09 | M7: Production | Process Memory (PSS) | React Native: 110-165 MB | **44.1 MB** | -60% to -73% | Measured with dumpsys meminfo |
 | 2026-11-09 | M7: Production | Cold Start Time (P50) | React Native: 1200-2800 ms | **640-950 ms** | 2.5x faster | Measured with `am start-activity -W` |
+| 2026-11-10 | Phase 1 Styling | 10k-Node Style Resolution | React Native / CSS-in-JS: ~150-300 ms | **45.91 ms (4.59 µs/node)** | 3-6x faster | Full cascade, specificity, media queries, style registry interning |
+| 2026-11-10 | Phase 1 Styling | Style Theme Switch JNI | Ad-hoc styles: 100+ calls | **1 batched call (150 B)** | -99% calls | Single `DirectByteBuffer` atomic buffer dispatch |
+| 2026-11-10 | Phase 1 Styling | Unchanged Style Interaction | CSS re-render: 1-10 ms | **0 patches / 0 JNI calls** | 0 overhead | Interaction cache filter in `ReactiveStyleResolver` |

@@ -25,6 +25,9 @@ object CommandDecoder {
     const val OP_SET_VISIBILITY: Byte = 9
     const val OP_ATTACH_EVENT_LISTENER: Byte = 10
     const val OP_DETACH_EVENT_LISTENER: Byte = 11
+    const val OP_REGISTER_STYLES: Byte = 12
+    const val OP_SET_STYLE: Byte = 13
+    const val OP_SET_STYLE_LIST: Byte = 14
 
     fun decode(buffer: ByteBuffer): List<Patch> {
         val buf = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
@@ -100,9 +103,176 @@ object CommandDecoder {
                 }
                 OP_SET_PROPERTY -> {
                     val nodeId = buf.long
-                    val propId = buf.short
+                    val property = decodeProperty(buf)
+                    if (property != null) {
+                        patches.add(Patch.SetProperty(nodeId, property))
+                    }
+                }
+                OP_SET_VISIBILITY -> {
+                    val nodeId = buf.long
+                    val visVal = buf.get()
+                    val visibility = Visibility.fromValue(visVal)
+                        ?: throw IllegalArgumentException("Unknown visibility: $visVal")
+                    patches.add(Patch.SetVisibility(nodeId, visibility))
+                }
+                OP_ATTACH_EVENT_LISTENER -> {
+                    val nodeId = buf.long
+                    val eventTypeVal = buf.short
+                    val eventType = EventType.fromValue(eventTypeVal)
+                        ?: throw IllegalArgumentException("Unknown event type: $eventTypeVal")
+                    patches.add(Patch.AttachEventListener(nodeId, eventType))
+                }
+                OP_DETACH_EVENT_LISTENER -> {
+                    val nodeId = buf.long
+                    val eventTypeVal = buf.short
+                    val eventType = EventType.fromValue(eventTypeVal)
+                        ?: throw IllegalArgumentException("Unknown event type: $eventTypeVal")
+                    patches.add(Patch.DetachEventListener(nodeId, eventType))
+                }
+                OP_REGISTER_STYLES -> {
+                    val styleCount = buf.int
+                    val styles = ArrayList<Pair<Int, List<Property>>>(styleCount)
+                    for (s in 0 until styleCount) {
+                        val styleId = buf.int
+                        val propCount = buf.short.toInt() and 0xFFFF
+                        val props = ArrayList<Property>(propCount)
+                        for (p in 0 until propCount) {
+                            val prop = decodeProperty(buf)
+                            if (prop != null) {
+                                props.add(prop)
+                            }
+                        }
+                        styles.add(Pair(styleId, props))
+                    }
+                    patches.add(Patch.RegisterStyles(styles))
+                }
+                OP_SET_STYLE -> {
+                    val nodeId = buf.long
+                    val styleId = buf.int
+                    patches.add(Patch.SetStyle(nodeId, styleId))
+                }
+                OP_SET_STYLE_LIST -> {
+                    val nodeId = buf.long
+                    val styleCount = buf.short.toInt() and 0xFFFF
+                    val styleIds = ArrayList<Int>(styleCount)
+                    for (s in 0 until styleCount) {
+                        styleIds.add(buf.int)
+                    }
+                    patches.add(Patch.SetStyleList(nodeId, styleIds))
+                }
+                else -> throw IllegalArgumentException("Unknown opcode: $opcode")
+            }
+        }
+
+        return patches
+    }
+
+    /**
+     * Decodes a binary command buffer into a list of [Command]s.
+     */
+    fun decodeCommands(buffer: ByteBuffer): List<Command> {
+        val buf = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
+        if (buf.remaining() < 8) return emptyList()
+
+        val magic = buf.int
+        if (magic != MAGIC_FXCM) {
+            throw IllegalArgumentException("Invalid command magic header: 0x${Integer.toHexString(magic)}")
+        }
+
+        val count = buf.int
+        val commands = ArrayList<Command>(count)
+
+        for (i in 0 until count) {
+            val op = buf.get().toInt()
+            when (op) {
+                1 -> commands.add(Command.FocusNode(buf.long))
+                2 -> commands.add(Command.BlurNode(buf.long))
+                3 -> {
+                    val nodeId = buf.long
+                    val x = buf.float
+                    val y = buf.float
+                    val animated = buf.get() != 0.toByte()
+                    commands.add(Command.ScrollTo(nodeId, x, y, animated))
+                }
+                4 -> commands.add(Command.MeasureNode(buf.long))
+                5 -> {
+                    val containerId = buf.long
+                    val screenId = buf.long
+                    val animation = buf.get()
+                    commands.add(Command.Navigate(containerId, screenId, animation))
+                }
+                6 -> {
+                    val containerId = buf.long
+                    val animation = buf.get()
+                    commands.add(Command.GoBack(containerId, animation))
+                }
+                7 -> {
+                    val screenId = buf.long
+                    val titleLen = buf.int
+                    val titleBytes = ByteArray(titleLen)
+                    buf.get(titleBytes)
+                    val title = String(titleBytes, StandardCharsets.UTF_8)
+                    val headerShown = buf.get() != 0.toByte()
+                    val presentation = buf.get()
+                    commands.add(Command.SetScreenOptions(screenId, title, headerShown, presentation))
+                }
+            }
+        }
+        return commands
+    }
+
+    /**
+     * Decodes text measurement requests sent from Rust.
+     */
+    fun decodeTextMeasureRequests(buffer: ByteBuffer): List<TextMeasureRequest> {
+        val buf = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
+        if (buf.remaining() < 8) return emptyList()
+
+        val magic = buf.int
+        if (magic != MAGIC_FXTM) {
+            throw IllegalArgumentException("Invalid text measure magic header: 0x${Integer.toHexString(magic)}")
+        }
+
+        val count = buf.int
+        val requests = ArrayList<TextMeasureRequest>(count)
+
+        for (i in 0 until count) {
+            val reqId = buf.int
+            val fontSize = buf.float
+            val weight = buf.short.toInt() and 0xFFFF
+            val style = buf.get().toInt() and 0xFF
+            val maxWidth = buf.float
+            val textLen = buf.int
+            val textBytes = ByteArray(textLen)
+            buf.get(textBytes)
+            val text = String(textBytes, StandardCharsets.UTF_8)
+
+            requests.add(TextMeasureRequest(reqId, text, fontSize, weight, style, maxWidth))
+        }
+        return requests
+    }
+
+    /**
+     * Encodes text measurement responses to be returned to Rust.
+     */
+    fun encodeTextMeasureResponses(responses: List<TextMeasureResponse>): ByteBuffer {
+        val buf = ByteBuffer.allocateDirect(8 + responses.size * 12).order(ByteOrder.LITTLE_ENDIAN)
+        buf.putInt(MAGIC_FXTR)
+        buf.putInt(responses.size)
+
+        for (resp in responses) {
+            buf.putInt(resp.requestId)
+            buf.putFloat(resp.width)
+            buf.putFloat(resp.height)
+        }
+        buf.flip()
+        return buf
+    }
+
+    fun decodeProperty(buf: ByteBuffer): Property? {
+        val propId = buf.short
                     val valLen = buf.short.toInt() and 0xFFFF
-                    val property = when (propId.toInt()) {
+                    return when (propId.toInt()) {
                         1 -> Property.BackgroundColor(buf.int)
                         2 -> Property.TextColor(buf.int)
                         3 -> Property.FontSize(buf.float)
@@ -302,137 +472,6 @@ object CommandDecoder {
                             null
                         }
                     }
-                    if (property != null) {
-                        patches.add(Patch.SetProperty(nodeId, property))
-                    }
-                }
-                OP_SET_VISIBILITY -> {
-                    val nodeId = buf.long
-                    val visVal = buf.get()
-                    val visibility = Visibility.fromValue(visVal)
-                        ?: throw IllegalArgumentException("Unknown visibility: $visVal")
-                    patches.add(Patch.SetVisibility(nodeId, visibility))
-                }
-                OP_ATTACH_EVENT_LISTENER -> {
-                    val nodeId = buf.long
-                    val eventTypeVal = buf.short
-                    val eventType = EventType.fromValue(eventTypeVal)
-                        ?: throw IllegalArgumentException("Unknown event type: $eventTypeVal")
-                    patches.add(Patch.AttachEventListener(nodeId, eventType))
-                }
-                OP_DETACH_EVENT_LISTENER -> {
-                    val nodeId = buf.long
-                    val eventTypeVal = buf.short
-                    val eventType = EventType.fromValue(eventTypeVal)
-                        ?: throw IllegalArgumentException("Unknown event type: $eventTypeVal")
-                    patches.add(Patch.DetachEventListener(nodeId, eventType))
-                }
-                else -> throw IllegalArgumentException("Unknown opcode: $opcode")
-            }
-        }
-
-        return patches
     }
 
-    /**
-     * Decodes a binary command buffer into a list of [Command]s.
-     */
-    fun decodeCommands(buffer: ByteBuffer): List<Command> {
-        val buf = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
-        if (buf.remaining() < 8) return emptyList()
-
-        val magic = buf.int
-        if (magic != MAGIC_FXCM) {
-            throw IllegalArgumentException("Invalid command magic header: 0x${Integer.toHexString(magic)}")
-        }
-
-        val count = buf.int
-        val commands = ArrayList<Command>(count)
-
-        for (i in 0 until count) {
-            val op = buf.get().toInt()
-            when (op) {
-                1 -> commands.add(Command.FocusNode(buf.long))
-                2 -> commands.add(Command.BlurNode(buf.long))
-                3 -> {
-                    val nodeId = buf.long
-                    val x = buf.float
-                    val y = buf.float
-                    val animated = buf.get() != 0.toByte()
-                    commands.add(Command.ScrollTo(nodeId, x, y, animated))
-                }
-                4 -> commands.add(Command.MeasureNode(buf.long))
-                5 -> {
-                    val containerId = buf.long
-                    val screenId = buf.long
-                    val animation = buf.get()
-                    commands.add(Command.Navigate(containerId, screenId, animation))
-                }
-                6 -> {
-                    val containerId = buf.long
-                    val animation = buf.get()
-                    commands.add(Command.GoBack(containerId, animation))
-                }
-                7 -> {
-                    val screenId = buf.long
-                    val titleLen = buf.int
-                    val titleBytes = ByteArray(titleLen)
-                    buf.get(titleBytes)
-                    val title = String(titleBytes, StandardCharsets.UTF_8)
-                    val headerShown = buf.get() != 0.toByte()
-                    val presentation = buf.get()
-                    commands.add(Command.SetScreenOptions(screenId, title, headerShown, presentation))
-                }
-            }
-        }
-        return commands
-    }
-
-    /**
-     * Decodes text measurement requests sent from Rust.
-     */
-    fun decodeTextMeasureRequests(buffer: ByteBuffer): List<TextMeasureRequest> {
-        val buf = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN)
-        if (buf.remaining() < 8) return emptyList()
-
-        val magic = buf.int
-        if (magic != MAGIC_FXTM) {
-            throw IllegalArgumentException("Invalid text measure magic header: 0x${Integer.toHexString(magic)}")
-        }
-
-        val count = buf.int
-        val requests = ArrayList<TextMeasureRequest>(count)
-
-        for (i in 0 until count) {
-            val reqId = buf.int
-            val fontSize = buf.float
-            val weight = buf.short.toInt() and 0xFFFF
-            val style = buf.get().toInt() and 0xFF
-            val maxWidth = buf.float
-            val textLen = buf.int
-            val textBytes = ByteArray(textLen)
-            buf.get(textBytes)
-            val text = String(textBytes, StandardCharsets.UTF_8)
-
-            requests.add(TextMeasureRequest(reqId, text, fontSize, weight, style, maxWidth))
-        }
-        return requests
-    }
-
-    /**
-     * Encodes text measurement responses to be returned to Rust.
-     */
-    fun encodeTextMeasureResponses(responses: List<TextMeasureResponse>): ByteBuffer {
-        val buf = ByteBuffer.allocateDirect(8 + responses.size * 12).order(ByteOrder.LITTLE_ENDIAN)
-        buf.putInt(MAGIC_FXTR)
-        buf.putInt(responses.size)
-
-        for (resp in responses) {
-            buf.putInt(resp.requestId)
-            buf.putFloat(resp.width)
-            buf.putFloat(resp.height)
-        }
-        buf.flip()
-        return buf
-    }
 }

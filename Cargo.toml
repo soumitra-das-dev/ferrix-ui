@@ -23,6 +23,8 @@ members = [
     "crates/ferrix-devtools",
     "crates/ferrix-android",
     "crates/ferrix-cli",
+    "crates/ferrix-style",
+    "crates/ferrix-style-build",
     "benchmarks",
 ]
 
