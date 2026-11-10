@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ferrix-core = { version = "0.1" }
+ferrix-ui-core = { version = "0.1" }
 ferrix-reactivity = { version = "0.1" }
 ferrix-renderer-protocol = { version = "0.1" }
 ferrix-storage = { version = "0.1" }

@@ -4,7 +4,7 @@ members = [
     "crates/ferrix-renderer-protocol",
     "crates/ferrix-reactivity",
     "crates/ferrix-layout",
-    "crates/ferrix-core",
+    "crates/ferrix-ui-core",
     "crates/ferrix-compiler",
     "crates/ferrix-network",
     "crates/ferrix-modules",

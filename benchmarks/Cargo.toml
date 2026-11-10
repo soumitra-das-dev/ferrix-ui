@@ -12,6 +12,6 @@ path = "src/main.rs"
 [dependencies]
 ferrix-renderer-protocol = { path = "../crates/ferrix-renderer-protocol" }
 ferrix-reactivity = { path = "../crates/ferrix-reactivity" }
-ferrix-core = { path = "../crates/ferrix-core" }
+ferrix-ui-core = { path = "../crates/ferrix-ui-core" }
 ferrix-android = { path = "../crates/ferrix-android" }
 

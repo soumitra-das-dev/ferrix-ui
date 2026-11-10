@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
-ferrix-core = { version = "0.1.0", path = "../ferrix-core" }
+ferrix-ui-core = { version = "0.1.0", path = "../ferrix-ui-core" }
 ferrix-network = { version = "0.1.0", path = "../ferrix-network" }
 jni = { workspace = true }
 tracing = { workspace = true }
