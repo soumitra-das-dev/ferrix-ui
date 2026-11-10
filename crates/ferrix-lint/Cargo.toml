@@ -8,7 +8,7 @@ description = "Static analysis and linter rules for Ferrix .fsx components"
 authors.workspace = true
 
 [dependencies]
-ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }
+ferrix-compiler = { version = "0.1.1", path = "../ferrix-compiler" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

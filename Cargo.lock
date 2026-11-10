@@ -198,7 +198,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -221,7 +221,7 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ferrix-android"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-compiler",
  "ferrix-network",
@@ -235,7 +235,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-benchmarks"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-android",
  "ferrix-reactivity",
@@ -245,7 +245,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "crossterm",
@@ -263,14 +263,14 @@ dependencies = [
 
 [[package]]
 name = "ferrix-compiler"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "ferrix-config"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -283,7 +283,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-devtools"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
@@ -294,7 +294,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-fmt"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-compiler",
  "thiserror 2.0.21",
@@ -304,7 +304,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-forms"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "serde",
@@ -316,7 +316,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-i18n"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "serde",
@@ -328,7 +328,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-layout"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-renderer-protocol",
  "taffy",
@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-lint"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-compiler",
  "serde",
@@ -349,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-lsp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-compiler",
  "ferrix-fmt",
@@ -363,7 +363,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-modules"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bytes",
  "ferrix-reactivity",
@@ -376,7 +376,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-navigation"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
@@ -391,7 +391,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-network"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -400,18 +400,18 @@ dependencies = [
 
 [[package]]
 name = "ferrix-reactivity"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "ferrix-renderer-protocol"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "ferrix-router"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
@@ -425,7 +425,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-sqlite"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "rusqlite",
@@ -439,7 +439,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-storage"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "serde",
@@ -452,7 +452,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-store"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "ferrix-storage",
@@ -465,7 +465,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-style"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-layout",
  "ferrix-renderer-protocol",
@@ -478,7 +478,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-style-build"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-layout",
  "ferrix-renderer-protocol",
@@ -491,7 +491,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-test"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
@@ -501,7 +501,7 @@ dependencies = [
 
 [[package]]
 name = "ferrix-ui-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ferrix-layout",
  "ferrix-network",
@@ -808,7 +808,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -990,7 +990,7 @@ dependencies = [
  "getrandom",
  "once_cell",
  "rustix 1.1.6",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1195,7 +1195,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

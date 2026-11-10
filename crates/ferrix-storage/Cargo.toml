@@ -8,7 +8,7 @@ description = "Persistent key-value storage engine and reactive use_storage hook
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
+ferrix-reactivity = { version = "0.1.1", path = "../ferrix-reactivity" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

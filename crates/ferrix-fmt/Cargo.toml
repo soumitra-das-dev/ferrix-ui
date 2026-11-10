@@ -8,7 +8,7 @@ description = "Lossless AST code formatter for .fsx files in Ferrix"
 authors.workspace = true
 
 [dependencies]
-ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }
+ferrix-compiler = { version = "0.1.1", path = "../ferrix-compiler" }
 thiserror.workspace = true
 tracing.workspace = true
 

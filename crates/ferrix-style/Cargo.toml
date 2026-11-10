@@ -7,8 +7,8 @@ repository.workspace = true
 description = "Native Style IR, Style Registry, Cascade Engine, and Reactive Style Resolver for Ferrix"
 
 [dependencies]
-ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
-ferrix-layout = { version = "0.1.0", path = "../ferrix-layout" }
+ferrix-renderer-protocol = { version = "0.1.1", path = "../ferrix-renderer-protocol" }
+ferrix-layout = { version = "0.1.1", path = "../ferrix-layout" }
 taffy = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

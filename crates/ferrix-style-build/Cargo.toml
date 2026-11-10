@@ -7,9 +7,9 @@ repository.workspace = true
 description = "Build-time CSS subset parser, shorthand expander, and CSS Modules generator for Ferrix"
 
 [dependencies]
-ferrix-style = { version = "0.1.0", path = "../ferrix-style" }
-ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
-ferrix-layout = { version = "0.1.0", path = "../ferrix-layout" }
+ferrix-style = { version = "0.1.1", path = "../ferrix-style" }
+ferrix-renderer-protocol = { version = "0.1.1", path = "../ferrix-renderer-protocol" }
+ferrix-layout = { version = "0.1.1", path = "../ferrix-layout" }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

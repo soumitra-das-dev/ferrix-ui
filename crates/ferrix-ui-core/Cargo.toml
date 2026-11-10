@@ -10,8 +10,8 @@ description = "Components, hooks, lifecycle, and reconciliation for Ferrix"
 name = "ferrix_core"
 
 [dependencies]
-ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
-ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
-ferrix-layout = { version = "0.1.0", path = "../ferrix-layout" }
-ferrix-network = { version = "0.1.0", path = "../ferrix-network" }
+ferrix-renderer-protocol = { version = "0.1.1", path = "../ferrix-renderer-protocol" }
+ferrix-reactivity = { version = "0.1.1", path = "../ferrix-reactivity" }
+ferrix-layout = { version = "0.1.1", path = "../ferrix-layout" }
+ferrix-network = { version = "0.1.1", path = "../ferrix-network" }
 tracing = { workspace = true }

@@ -8,8 +8,8 @@ description = "Global state management and persisted slice store for Ferrix"
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
-ferrix-storage = { version = "0.1.0", path = "../ferrix-storage" }
+ferrix-reactivity = { version = "0.1.1", path = "../ferrix-reactivity" }
+ferrix-storage = { version = "0.1.1", path = "../ferrix-storage" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

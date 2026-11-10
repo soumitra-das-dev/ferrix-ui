@@ -7,10 +7,10 @@ repository.workspace = true
 description = "Production developer toolchain and CLI for the Ferrix UI framework"
 
 [dependencies]
-ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }
-ferrix-config = { version = "0.1.0", path = "../ferrix-config" }
-ferrix-fmt = { version = "0.1.0", path = "../ferrix-fmt" }
-ferrix-lint = { version = "0.1.0", path = "../ferrix-lint" }
+ferrix-compiler = { version = "0.1.1", path = "../ferrix-compiler" }
+ferrix-config = { version = "0.1.1", path = "../ferrix-config" }
+ferrix-fmt = { version = "0.1.1", path = "../ferrix-fmt" }
+ferrix-lint = { version = "0.1.1", path = "../ferrix-lint" }
 clap = { version = "4.5", features = ["derive"] }
 walkdir = "2.5"
 thiserror = "2.0"

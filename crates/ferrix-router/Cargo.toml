@@ -8,9 +8,9 @@ description = "File-based and programmatic routing system for Ferrix UI applicat
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
-ferrix-ui-core = { version = "0.1.0", path = "../ferrix-ui-core" }
-ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
+ferrix-reactivity = { version = "0.1.1", path = "../ferrix-reactivity" }
+ferrix-ui-core = { version = "0.1.1", path = "../ferrix-ui-core" }
+ferrix-renderer-protocol = { version = "0.1.1", path = "../ferrix-renderer-protocol" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

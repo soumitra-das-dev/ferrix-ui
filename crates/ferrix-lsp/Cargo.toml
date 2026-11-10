@@ -8,9 +8,9 @@ description = "Language Server Protocol implementation for .fsx component editin
 authors.workspace = true
 
 [dependencies]
-ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }
-ferrix-fmt = { version = "0.1.0", path = "../ferrix-fmt" }
-ferrix-lint = { version = "0.1.0", path = "../ferrix-lint" }
+ferrix-compiler = { version = "0.1.1", path = "../ferrix-compiler" }
+ferrix-fmt = { version = "0.1.1", path = "../ferrix-fmt" }
+ferrix-lint = { version = "0.1.1", path = "../ferrix-lint" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

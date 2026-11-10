@@ -10,13 +10,13 @@ description = "Android JNI bindings and native bridge runtime for Ferrix"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
-ferrix-ui-core = { version = "0.1.0", path = "../ferrix-ui-core" }
-ferrix-network = { version = "0.1.0", path = "../ferrix-network" }
+ferrix-renderer-protocol = { version = "0.1.1", path = "../ferrix-renderer-protocol" }
+ferrix-ui-core = { version = "0.1.1", path = "../ferrix-ui-core" }
+ferrix-network = { version = "0.1.1", path = "../ferrix-network" }
 jni = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 
 [build-dependencies]
-ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }
+ferrix-compiler = { version = "0.1.1", path = "../ferrix-compiler" }

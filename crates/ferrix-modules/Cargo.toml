@@ -8,9 +8,9 @@ description = "Native modules subsystem and Expo-compatible module bridging for 
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
-ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
-ferrix-ui-core = { version = "0.1.0", path = "../ferrix-ui-core" }
+ferrix-reactivity = { version = "0.1.1", path = "../ferrix-reactivity" }
+ferrix-renderer-protocol = { version = "0.1.1", path = "../ferrix-renderer-protocol" }
+ferrix-ui-core = { version = "0.1.1", path = "../ferrix-ui-core" }
 thiserror.workspace = true
 tracing.workspace = true
 bytes.workspace = true
