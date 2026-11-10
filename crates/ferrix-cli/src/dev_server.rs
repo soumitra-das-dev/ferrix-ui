@@ -454,7 +454,7 @@ pub fn launch_app_on_device(state: &mut DevServerState) -> Result<(), String> {
         .status();
 
     // 5. Launch activity with session token extra
-    let activity = format!("{}/.MainActivity", state.package_name);
+    let activity = format!("{}/dev.ferrix.host.MainActivity", state.package_name);
     println!("  🚀 Launching activity '{}'...", activity);
 
     let launch_status = Command::new("adb")

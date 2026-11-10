@@ -167,7 +167,7 @@ fn execute_smoke_test(args: &DevArgs) -> Result<(), String> {
 
     // 5. Read package name from ferrix.config.toml
     let pkg_name = read_package_name().unwrap_or_else(|| "com.example.app".to_string());
-    let activity = format!("{}/.MainActivity", pkg_name);
+    let activity = format!("{}/dev.ferrix.host.MainActivity", pkg_name);
 
     // 6. Clear logcat buffer
     let _ = Command::new("adb")
@@ -413,14 +413,8 @@ fn detect_failure_signals(line: &str) -> Option<&'static str> {
 
 pub fn read_package_name() -> Option<String> {
     if let Ok(config_str) = fs::read_to_string("ferrix.config.toml") {
-        for line in config_str.lines() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("package =") {
-                let parts: Vec<&str> = trimmed.split('=').collect();
-                if parts.len() >= 2 {
-                    return Some(parts[1].trim().trim_matches('"').to_string());
-                }
-            }
+        if let Ok(config) = ferrix_config::FerrixConfig::parse(&config_str) {
+            return Some(config.app.id);
         }
     }
     None

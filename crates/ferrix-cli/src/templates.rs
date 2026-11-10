@@ -149,24 +149,41 @@ pub fn scaffold_project(
         .to_string();
     let pkg_name = slug.replace('-', "_");
 
-    // 1. Write ferrix.config.toml
+    // 1. Write ferrix.config.toml (Schema Version 1)
     let config_content = format!(
-        r#"# Ferrix Application Configuration
+        r##"schema_version = 1
+
+[app]
 name = "{app_name}"
 slug = "{slug}"
+id = "com.example.{pkg_name}"
 version = "0.1.0"
+description = "A Ferrix mobile application"
+orientation = "portrait"
+edge_to_edge = true
 
 [android]
-package = "com.example.{pkg_name}"
-version_code = 1
 min_sdk = 26
-target_sdk = 34
-compile_sdk = 34
-scheme = "{slug}"
+target_sdk = 35
+compile_sdk = 35
+permissions = ["INTERNET"]
+features = []
+allow_backup = false
+cleartext_domains = []
 
-[build]
-output_dir = "dist"
-"#
+[icon]
+adaptive_background = "#0B1F3A"
+round = true
+
+[splash]
+background = "#0B1F3A"
+dark_background = "#000000"
+keep_until_ready = true
+exit_animation = "fade"
+
+[deep_links]
+schemes = ["{slug}"]
+"##
     );
     fs::write(target_dir.join("ferrix.config.toml"), config_content)?;
 
@@ -237,6 +254,8 @@ ferrix-renderer-protocol = { version = "0.1" }
 name = "{slug}"
 version = "0.1.0"
 edition = "2021"
+
+[workspace]
 
 [lib]
 name = "{pkg_name}"
@@ -692,9 +711,9 @@ pub fn scaffold_android_project(
     let main_dir = app_dir.join("src").join("main");
     let java_pkg_dir = main_dir
         .join("java")
-        .join("com")
-        .join("example")
-        .join(pkg_name);
+        .join("dev")
+        .join("ferrix")
+        .join("host");
 
     fs::create_dir_all(&java_pkg_dir)?;
     fs::create_dir_all(android_dir.join("gradle").join("wrapper"))?;
@@ -756,13 +775,13 @@ zipStorePath=wrapper/dists
 }}
 
 android {{
-    namespace = "com.example.{pkg_name}"
-    compileSdk = 34
+    namespace = "dev.ferrix.host"
+    compileSdk = 35
 
     defaultConfig {{
         applicationId = "com.example.{pkg_name}"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
 
@@ -801,41 +820,36 @@ android {{
 dependencies {{
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("com.google.android.material:material:1.11.0")
 }}
 "#
     );
     fs::write(app_dir.join("build.gradle.kts"), app_build_gradle)?;
 
-    // android/app/src/main/AndroidManifest.xml
-    let manifest_xml = format!(
-        r#"<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET" />
+    // Generate Android artifacts from ferrix.config.toml
+    let config_file = project_dir.join("ferrix.config.toml");
+    let ferrix_cfg = if config_file.exists() {
+        let content = fs::read_to_string(&config_file)?;
+        ferrix_config::FerrixConfig::parse(&content).unwrap_or_else(|_| {
+            let mut cfg = ferrix_config::FerrixConfig::default();
+            cfg.app.name = slug.to_string();
+            cfg.app.slug = slug.to_string();
+            cfg.app.id = format!("com.example.{}", pkg_name);
+            cfg
+        })
+    } else {
+        let mut cfg = ferrix_config::FerrixConfig::default();
+        cfg.app.name = slug.to_string();
+        cfg.app.slug = slug.to_string();
+        cfg.app.id = format!("com.example.{}", pkg_name);
+        cfg
+    };
+    ferrix_cfg.write_all_artifacts(&main_dir, None)?;
 
-    <application
-        android:allowBackup="true"
-        android:label="{slug}"
-        android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
-"#
-    );
-    fs::write(main_dir.join("AndroidManifest.xml"), manifest_xml)?;
-
-    // MainActivity.kt
+    // MainActivity.kt (fixed host namespace)
     let main_activity = format!(
-        r#"package com.example.{pkg_name}
+        r#"package dev.ferrix.host
 
 import android.app.Activity
 import android.content.BroadcastReceiver
@@ -846,6 +860,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.FrameLayout
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : Activity() {{
     companion object {{
@@ -866,6 +881,11 @@ class MainActivity : Activity() {{
     }}
 
     override fun onCreate(savedInstanceState: Bundle?) {{
+        try {{
+            installSplashScreen()
+        }} catch (e: Throwable) {{
+            Log.w("ferrix", "SplashScreen install skipped: ${{e.message}}")
+        }}
         super.onCreate(savedInstanceState)
         val rootLayout = FrameLayout(this).apply {{
             tag = "ferrix:root"

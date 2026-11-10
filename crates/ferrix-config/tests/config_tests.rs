@@ -48,7 +48,10 @@ fn test_invalid_package_name_rejected() {
     "#;
 
     let err = FerrixConfig::parse(toml).unwrap_err();
-    assert_eq!(err, ConfigError::InvalidPackageName("invalid".to_string()));
+    assert_eq!(
+        err,
+        ConfigError::PackageNameTooFewSegments("invalid".to_string())
+    );
 }
 
 #[test]

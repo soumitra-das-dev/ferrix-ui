@@ -17,24 +17,10 @@ pub fn execute(args: &PrebuildArgs) -> Result<(), String> {
     let config_str = fs::read_to_string(config_path)
         .map_err(|e| format!("Failed to read ferrix.config.toml: {}", e))?;
 
-    let mut slug = "ferrix-app".to_string();
-    let mut pkg_name = "ferrix_app".to_string();
-
-    for line in config_str.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("slug =") {
-            if let Some(val) = trimmed.split('=').nth(1) {
-                slug = val.trim().trim_matches('"').to_string();
-            }
-        } else if trimmed.starts_with("package =") {
-            if let Some(val) = trimmed.split('=').nth(1) {
-                let full_pkg = val.trim().trim_matches('"');
-                if let Some(last) = full_pkg.split('.').next_back() {
-                    pkg_name = last.to_string();
-                }
-            }
-        }
-    }
+    let config = ferrix_config::FerrixConfig::parse(&config_str)
+        .map_err(|e| format!("Failed to parse ferrix.config.toml: {}", e))?;
+    let slug = config.app.slug.clone();
+    let pkg_name = slug.replace('-', "_");
 
     let android_dir = Path::new("android");
     if args.clean && android_dir.exists() {

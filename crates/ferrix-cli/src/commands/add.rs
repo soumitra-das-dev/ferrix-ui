@@ -14,14 +14,11 @@ pub fn execute(args: &AddArgs) -> Result<(), String> {
         return Err("No Cargo.toml found in current directory. Run from project root.".to_string());
     }
 
-    let manifest_path = Path::new("android/app/src/main/AndroidManifest.xml");
-
     match module.as_str() {
         "camera" => {
             append_cargo_dependency("ferrix-modules", "0.1")?;
-            inject_android_permission(manifest_path, "android.permission.CAMERA")?;
+            add_config_permission("CAMERA")?;
             println!("  ✅ Added 'ferrix-modules' to Cargo.toml");
-            println!("  ✅ Added 'android.permission.CAMERA' to AndroidManifest.xml");
             print_snippet(
                 "Camera Usage",
                 r#"import { useCamera } from "ferrix/modules";
@@ -33,10 +30,9 @@ const camera = useCamera();
         }
         "location" => {
             append_cargo_dependency("ferrix-modules", "0.1")?;
-            inject_android_permission(manifest_path, "android.permission.ACCESS_FINE_LOCATION")?;
-            inject_android_permission(manifest_path, "android.permission.ACCESS_COARSE_LOCATION")?;
+            add_config_permission("ACCESS_FINE_LOCATION")?;
+            add_config_permission("ACCESS_COARSE_LOCATION")?;
             println!("  ✅ Added 'ferrix-modules' to Cargo.toml");
-            println!("  ✅ Added location permissions to AndroidManifest.xml");
             print_snippet(
                 "Location Usage",
                 r#"import { useLocation } from "ferrix/modules";
@@ -150,26 +146,36 @@ fn append_cargo_dependency(name: &str, version: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn inject_android_permission(manifest_path: &Path, permission: &str) -> Result<(), String> {
-    if !manifest_path.exists() {
-        return Ok(()); // Native android not materialized, skip silently
-    }
-
-    let mut content =
-        fs::read_to_string(manifest_path).map_err(|e| format!("Failed to read manifest: {}", e))?;
-
-    let perm_tag = format!("<uses-permission android:name=\"{}\" />", permission);
-    if content.contains(&perm_tag) {
+fn add_config_permission(permission: &str) -> Result<(), String> {
+    let config_path = Path::new("ferrix.config.toml");
+    if !config_path.exists() {
         return Ok(());
     }
 
-    if let Some(pos) = content.find("<manifest") {
-        if let Some(tag_end) = content[pos..].find('>') {
-            let insert_pos = pos + tag_end + 1;
-            content.insert_str(insert_pos, &format!("\n    {}", perm_tag));
-            fs::write(manifest_path, content)
-                .map_err(|e| format!("Failed to update manifest: {}", e))?;
-        }
+    let content = fs::read_to_string(config_path)
+        .map_err(|e| format!("Failed to read ferrix.config.toml: {}", e))?;
+    let mut config = ferrix_config::FerrixConfig::parse(&content)
+        .map_err(|e| format!("Failed to parse config: {}", e))?;
+
+    let perm_clean = permission.trim_start_matches("android.permission.");
+    if !config
+        .android
+        .permissions
+        .iter()
+        .any(|p| p == perm_clean || p == permission)
+    {
+        config.android.permissions.push(perm_clean.to_string());
+        let updated_toml =
+            toml::to_string_pretty(&config).map_err(|e| format!("Failed to format toml: {}", e))?;
+        fs::write(config_path, updated_toml)
+            .map_err(|e| format!("Failed to write ferrix.config.toml: {}", e))?;
+        println!("  ✅ Added '{}' to ferrix.config.toml", permission);
+    }
+
+    // Regenerate android artifacts if android/ exists
+    let android_main = Path::new("android/app/src/main");
+    if android_main.exists() {
+        let _ = config.write_all_artifacts(android_main, None);
     }
 
     Ok(())

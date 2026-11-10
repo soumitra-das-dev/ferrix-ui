@@ -126,7 +126,7 @@ pub fn execute(args: &RunArgs) -> Result<(), String> {
 
     // 5. Discover package name and launch via ADB
     let pkg_name = read_package_name().unwrap_or_else(|| "com.example.app".to_string());
-    let activity = format!("{}/.MainActivity", pkg_name);
+    let activity = format!("{}/dev.ferrix.host.MainActivity", pkg_name);
 
     println!("  🚀 Starting activity '{}' via ADB...", activity);
 
@@ -182,14 +182,8 @@ pub fn execute(args: &RunArgs) -> Result<(), String> {
 
 pub fn read_package_name() -> Option<String> {
     if let Ok(config_str) = std::fs::read_to_string("ferrix.config.toml") {
-        for line in config_str.lines() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("package =") {
-                let parts: Vec<&str> = trimmed.split('=').collect();
-                if parts.len() >= 2 {
-                    return Some(parts[1].trim().trim_matches('"').to_string());
-                }
-            }
+        if let Ok(config) = ferrix_config::FerrixConfig::parse(&config_str) {
+            return Some(config.app.id);
         }
     }
     None

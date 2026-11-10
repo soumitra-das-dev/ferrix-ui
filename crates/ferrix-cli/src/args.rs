@@ -57,6 +57,12 @@ pub enum Commands {
 
     /// Compile a single .fsx UI file ahead-of-time into Rust code
     Compile(CompileArgs),
+
+    /// Manage, validate, and print ferrix.config.toml
+    Config(ConfigArgs),
+
+    /// Inspect, generate, and test Android deep links
+    Deeplinks(DeeplinksArgs),
 }
 
 #[derive(Args, Debug)]
@@ -311,4 +317,77 @@ pub struct CompileArgs {
     /// Optional output file path (defaults to <input>.rs)
     #[arg(short, long)]
     pub output: Option<String>,
+}
+
+#[derive(Args, Debug)]
+pub struct ConfigArgs {
+    #[command(subcommand)]
+    pub action: ConfigAction,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ConfigAction {
+    /// Validate ferrix.config.toml against schema v1
+    Check,
+
+    /// Print resolved configuration values
+    Print(ConfigPrintArgs),
+
+    /// Explain the schema and defaults for a configuration key
+    Explain(ConfigExplainArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct ConfigPrintArgs {
+    /// Build variant to resolve (e.g. dev, staging, prod)
+    #[arg(long)]
+    pub variant: Option<String>,
+
+    /// Output resolved configuration as JSON
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct ConfigExplainArgs {
+    /// Configuration key to explain (e.g. 'app.id', 'splash.background')
+    pub key: String,
+}
+
+#[derive(Args, Debug)]
+pub struct DeeplinksArgs {
+    #[command(subcommand)]
+    pub action: DeeplinksAction,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DeeplinksAction {
+    /// Emit assetlinks.json for Android App Links verification
+    Assetlinks(AssetlinksArgs),
+
+    /// Test launching a deep link via ADB
+    Test(DeeplinkTestArgs),
+
+    /// Verify domain link status via adb pm get-app-links
+    Verify(DeeplinkVerifyArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct AssetlinksArgs {
+    /// Optional SHA-256 certificate fingerprints
+    #[arg(long = "fingerprint")]
+    pub fingerprints: Vec<String>,
+}
+
+#[derive(Args, Debug)]
+pub struct DeeplinkTestArgs {
+    /// The deep link URL to launch (e.g. myapp://home, https://example.com/product/123)
+    pub url: String,
+}
+
+#[derive(Args, Debug)]
+pub struct DeeplinkVerifyArgs {
+    /// Application ID / package name (defaults to app.id in ferrix.config.toml)
+    #[arg(long)]
+    pub package: Option<String>,
 }

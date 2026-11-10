@@ -4,20 +4,14 @@
 //! Provides project scaffolding, toolchain diagnostics, live dev loop, AOT compilation,
 //! code formatting, linter validation, and release packaging.
 
-pub mod args;
-pub mod commands;
-pub mod crash;
-pub mod dev_server;
-pub mod device;
-pub mod jni;
-pub mod templates;
-
 use std::path::Path;
 use std::process;
 
 use clap::Parser;
 
-use crate::args::{Cli, Commands};
+use ferrix_cli::args::{Cli, Commands};
+use ferrix_cli::commands;
+use ferrix_cli::templates;
 
 fn main() {
     let cli = Cli::parse();
@@ -93,6 +87,8 @@ fn main() {
         Commands::Prebuild(args) => commands::prebuild::execute(args),
         Commands::Compile(args) => commands::compile::execute(args),
         Commands::Style(args) => commands::style::execute(args),
+        Commands::Config(args) => commands::config::execute(args),
+        Commands::Deeplinks(args) => commands::deeplinks::execute(args),
     };
 
     if let Err(err_msg) = result {
