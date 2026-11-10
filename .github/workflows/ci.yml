@@ -11,6 +11,7 @@ jobs:
   rust-verification:
     name: Rust Workspace Checks & Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -18,7 +19,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-          targets: aarch64-linux-android, x86_64-linux-android
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -35,6 +35,7 @@ jobs:
   android-verification:
     name: Android Runtime & Robolectric Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
