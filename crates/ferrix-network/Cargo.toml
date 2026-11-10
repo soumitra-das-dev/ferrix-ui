@@ -3,6 +3,7 @@ name = "ferrix-network"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Networking layer for Ferrix running on Tokio/Reqwest behind traits"
 
 [dependencies]

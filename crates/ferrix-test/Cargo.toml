@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 description = "Headless component testing framework and event simulation harness for Ferrix"
 license = "MIT OR Apache-2.0"
+repository.workspace = true
 
 [dependencies]
-ferrix-core = { path = "../ferrix-core" }
-ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
-ferrix-reactivity = { path = "../ferrix-reactivity" }
+ferrix-core = { version = "0.1.0", path = "../ferrix-core" }
+ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
+ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
 thiserror = "1.0"
 
 [dev-dependencies]

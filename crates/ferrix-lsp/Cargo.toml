@@ -3,12 +3,14 @@ name = "ferrix-lsp"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "Language Server Protocol implementation for .fsx component editing in Ferrix"
 authors.workspace = true
 
 [dependencies]
-ferrix-compiler = { path = "../ferrix-compiler" }
-ferrix-fmt = { path = "../ferrix-fmt" }
-ferrix-lint = { path = "../ferrix-lint" }
+ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }
+ferrix-fmt = { version = "0.1.0", path = "../ferrix-fmt" }
+ferrix-lint = { version = "0.1.0", path = "../ferrix-lint" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

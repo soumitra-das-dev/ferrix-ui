@@ -3,10 +3,12 @@ name = "ferrix-forms"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "Declarative form state, input validation, and submission hooks for Ferrix"
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { path = "../ferrix-reactivity" }
+ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -14,4 +16,3 @@ tracing.workspace = true
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-

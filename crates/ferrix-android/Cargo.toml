@@ -3,19 +3,20 @@ name = "ferrix-android"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Android JNI bindings and native bridge runtime for Ferrix"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
-ferrix-core = { path = "../ferrix-core" }
-ferrix-network = { path = "../ferrix-network" }
+ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
+ferrix-core = { version = "0.1.0", path = "../ferrix-core" }
+ferrix-network = { version = "0.1.0", path = "../ferrix-network" }
 jni = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 
 [build-dependencies]
-ferrix-compiler = { path = "../ferrix-compiler" }
+ferrix-compiler = { version = "0.1.0", path = "../ferrix-compiler" }

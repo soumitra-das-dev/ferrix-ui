@@ -3,11 +3,13 @@ name = "ferrix-store"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "Global state management and persisted slice store for Ferrix"
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { path = "../ferrix-reactivity" }
-ferrix-storage = { path = "../ferrix-storage" }
+ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
+ferrix-storage = { version = "0.1.0", path = "../ferrix-storage" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -15,4 +17,3 @@ tracing.workspace = true
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-
