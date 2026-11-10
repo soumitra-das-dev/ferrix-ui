@@ -60,7 +60,7 @@ pub struct NewArgs {
     /// Name of the new application/directory
     pub name: Option<String>,
 
-    /// Starter template: blank, hello-counter, tabs, stack, api-client, kitchen-sink
+    /// Starter template: blank, hello-counter, tabs, stack, router, api-client, kitchen-sink
     #[arg(short, long)]
     pub template: Option<String>,
 

@@ -37,6 +37,11 @@ pub const TEMPLATES: &[TemplateInfo] = &[
         description: "StackNavigator with master-detail navigation",
     },
     TemplateInfo {
+        id: "router",
+        name: "Router",
+        description: "Multi-file router navigation with separate modular screens",
+    },
+    TemplateInfo {
         id: "api-client",
         name: "API Client",
         description: "Asynchronous data fetching with activity indicator",
@@ -56,7 +61,7 @@ pub fn print_templates() {
     }
     println!("\nUsage:");
     println!("  ferrix new <name> --template <template>");
-    println!("  ferrix new my-app --template tabs");
+    println!("  ferrix new my-app --template router");
 }
 
 /// Normalizes and resolves a template name or alias to its canonical ID.
@@ -67,6 +72,7 @@ pub fn resolve_template(input: &str) -> Result<String, String> {
         "blank" | "empty" | "minimal" => Ok("blank".to_string()),
         "tabs" | "tab" | "tabnavigator" => Ok("tabs".to_string()),
         "stack" | "stacks" | "stacknavigator" => Ok("stack".to_string()),
+        "router" | "routes" | "routing" | "route" => Ok("router".to_string()),
         "api-client" | "api" | "apiclient" | "network" => Ok("api-client".to_string()),
         "kitchen-sink" | "kitchensink" | "kitchen" | "sink" => Ok("kitchen-sink".to_string()),
         other => {
@@ -201,10 +207,11 @@ ferrix-renderer-protocol = { version = "0.1" }
 "#,
     );
 
-    if args.router || template_id == "tabs" || template_id == "stack" {
+    if args.router || template_id == "router" || template_id == "tabs" || template_id == "stack" {
         cargo_deps.push_str("ferrix-router = { version = \"0.1\" }\n");
     }
-    if args.navigation || template_id == "tabs" || template_id == "stack" {
+    if args.navigation || template_id == "router" || template_id == "tabs" || template_id == "stack"
+    {
         cargo_deps.push_str("ferrix-navigation = { version = \"0.1\" }\n");
     }
     if template_id == "api-client" {
@@ -300,6 +307,42 @@ export function App(): Element {
 }
 "#
         }
+        "router" => {
+            r#"import { StackNavigator, Screen, Column, Text, Button } from "ferrix/ui";
+import { useRouter } from "ferrix/router";
+
+export function App(): Element {
+  const router = useRouter();
+
+  return (
+    <StackNavigator>
+      <Screen name="Home">
+        <Column padding={20} spacing={16}>
+          <Text size={26}>Ferrix App Router</Text>
+          <Text>Multi-file architecture with separate screen components.</Text>
+          <Button onClick={() => router.push("/details")}>Go to Details</Button>
+          <Button onClick={() => router.push("/profile")}>Go to Profile</Button>
+        </Column>
+      </Screen>
+      <Screen name="Details">
+        <Column padding={20} spacing={16}>
+          <Text size={26}>Details Screen</Text>
+          <Text>Compiled ahead-of-time from src/DetailsScreen.fsx.</Text>
+          <Button onClick={() => router.back()}>Back to Home</Button>
+        </Column>
+      </Screen>
+      <Screen name="Profile">
+        <Column padding={20} spacing={16}>
+          <Text size={26}>User Profile</Text>
+          <Text>Compiled ahead-of-time from src/ProfileScreen.fsx.</Text>
+          <Button onClick={() => router.back()}>Back to Home</Button>
+        </Column>
+      </Screen>
+    </StackNavigator>
+  );
+}
+"#
+        }
         "api-client" => {
             r#"import { Column, Text, Button, ActivityIndicator } from "ferrix/ui";
 import { useQuery } from "ferrix/network";
@@ -364,27 +407,169 @@ export function App(): Element {
 
     fs::write(src_dir.join("component.fsx"), component_content)?;
 
+    // If router template, scaffold additional modular screen files demonstrating multi-file architecture
+    if template_id == "router" {
+        fs::write(
+            src_dir.join("HomeScreen.fsx"),
+            r#"import { Column, Text, Button } from "ferrix/ui";
+import { useRouter } from "ferrix/router";
+
+export function HomeScreen(): Element {
+  const router = useRouter();
+
+  return (
+    <Column padding={20} spacing={16}>
+      <Text size={26}>Home Screen</Text>
+      <Text>Welcome to the multi-file Ferrix Router application.</Text>
+      <Button onClick={() => router.push("/details")}>View Details</Button>
+      <Button onClick={() => router.push("/profile")}>View Profile</Button>
+    </Column>
+  );
+}
+"#,
+        )?;
+
+        fs::write(
+            src_dir.join("DetailsScreen.fsx"),
+            r#"import { Column, Text, Button } from "ferrix/ui";
+import { useRouter } from "ferrix/router";
+
+export function DetailsScreen(): Element {
+  const router = useRouter();
+
+  return (
+    <Column padding={20} spacing={16}>
+      <Text size={26}>Details Screen</Text>
+      <Text>Compiled from a separate modular component in src/DetailsScreen.fsx.</Text>
+      <Button onClick={() => router.back()}>Back to Home</Button>
+    </Column>
+  );
+}
+"#,
+        )?;
+
+        fs::write(
+            src_dir.join("ProfileScreen.fsx"),
+            r#"import { Column, Row, Text, Button, Switch } from "ferrix/ui";
+import { useState } from "ferrix/reactivity";
+import { useRouter } from "ferrix/router";
+
+export function ProfileScreen(): Element {
+  const pushNotifications = useState(true);
+  const router = useRouter();
+
+  return (
+    <Column padding={20} spacing={16}>
+      <Text size={26}>Profile Settings</Text>
+      <Row spacing={8}>
+        <Text>Push Notifications:</Text>
+        <Switch
+          value={pushNotifications.value}
+          onValueChange={(val) => pushNotifications.set(val)}
+        />
+      </Row>
+      <Button onClick={() => router.back()}>Back to Home</Button>
+    </Column>
+  );
+}
+"#,
+        )?;
+
+        fs::write(
+            src_dir.join("Header.fsx"),
+            r#"import { Row, Text } from "ferrix/ui";
+
+export function Header(): Element {
+  return (
+    <Row padding={16} spacing={8}>
+      <Text size={20}>Ferrix App</Text>
+    </Row>
+  );
+}
+"#,
+        )?;
+    }
+
     // 6. Write src/lib.rs
     let lib_rs = format!(
         r#"//! {app_name} - Built with Ferrix UI Framework
-pub mod component {{
-    // Ahead-of-time compiled from src/component.fsx
-    include!(concat!(env!("OUT_DIR"), "/component_generated.rs"));
-}}
+
+// Ahead-of-time compiled modules from all .fsx files in src/
+include!(concat!(env!("OUT_DIR"), "/generated_modules.rs"));
+
+// Re-export primary component for convenience
+pub use component::*;
 "#
     );
     fs::write(src_dir.join("lib.rs"), lib_rs)?;
 
     // 7. Write build.rs for AOT compilation
-    let build_rs = r#"use std::path::Path;
+    let build_rs = r#"use std::fs;
+use std::path::Path;
 
 fn main() {
-    println!("cargo:rerun-if-changed=src/component.fsx");
+    println!("cargo:rerun-if-changed=src");
     let out_dir = std::env::var("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join("component_generated.rs");
+    let out_path = Path::new(&out_dir);
 
-    if let Err(err) = ferrix_compiler::compile_file("src/component.fsx", &dest_path) {
-        panic!("Failed to compile .fsx UI file: {}", err);
+    let mut generated_mods = String::new();
+    compile_fsx_directory(Path::new("src"), out_path, &mut generated_mods);
+
+    let mod_index_path = out_path.join("generated_modules.rs");
+    let _ = fs::write(mod_index_path, generated_mods);
+}
+
+fn to_snake_case(s: &str) -> String {
+    let mut out = String::new();
+    let mut prev_is_sep = false;
+    for (i, ch) in s.chars().enumerate() {
+        if ch == '-' || ch == '_' || ch == '/' || ch == '\\' {
+            if !prev_is_sep && !out.is_empty() {
+                out.push('_');
+            }
+            prev_is_sep = true;
+        } else if ch.is_uppercase() {
+            if i > 0 && !prev_is_sep {
+                out.push('_');
+            }
+            out.push(ch.to_ascii_lowercase());
+            prev_is_sep = false;
+        } else {
+            out.push(ch);
+            prev_is_sep = false;
+        }
+    }
+    out
+}
+
+fn compile_fsx_directory(dir: &Path, out_dir: &Path, mods: &mut String) {
+    if let Ok(entries) = fs::read_dir(dir) {
+        let mut paths: Vec<_> = entries.flatten().map(|e| e.path()).collect();
+        paths.sort();
+        for path in paths {
+            if path.is_dir() {
+                compile_fsx_directory(&path, out_dir, mods);
+            } else if path.extension().and_then(|s| s.to_str()) == Some("fsx") {
+                println!("cargo:rerun-if-changed={}", path.display());
+                let rel_path = path.strip_prefix("src").unwrap_or(&path);
+                let safe_stem = rel_path
+                    .to_string_lossy()
+                    .trim_start_matches('/')
+                    .replace(['/', '\\'], "_")
+                    .replace(".fsx", "");
+                let dest = out_dir.join(format!("{}_generated.rs", safe_stem));
+                if let Err(err) = ferrix_compiler::compile_file(&path, &dest) {
+                    panic!("Failed to compile '{}': {}", path.display(), err);
+                }
+                let mod_name = to_snake_case(&safe_stem);
+                mods.push_str(&format!(
+                    "pub mod {} {{\n    // Ahead-of-time compiled from {}\n    include!(concat!(env!(\"OUT_DIR\"), \"/{}_generated.rs\"));\n}}\n",
+                    mod_name,
+                    path.display(),
+                    safe_stem
+                ));
+            }
+        }
     }
 }
 "#;
@@ -660,6 +845,10 @@ mod tests {
         assert_eq!(resolve_template("tab").unwrap(), "tabs");
         assert_eq!(resolve_template("stack").unwrap(), "stack");
         assert_eq!(resolve_template("stacks").unwrap(), "stack");
+        assert_eq!(resolve_template("router").unwrap(), "router");
+        assert_eq!(resolve_template("routes").unwrap(), "router");
+        assert_eq!(resolve_template("routing").unwrap(), "router");
+        assert_eq!(resolve_template("route").unwrap(), "router");
         assert_eq!(resolve_template("api-client").unwrap(), "api-client");
         assert_eq!(resolve_template("api").unwrap(), "api-client");
         assert_eq!(resolve_template("kitchen-sink").unwrap(), "kitchen-sink");
@@ -681,6 +870,7 @@ mod tests {
             "blank",
             "tabs",
             "stack",
+            "router",
             "api-client",
             "kitchen-sink",
         ];
@@ -721,6 +911,34 @@ mod tests {
                 compile_res.err()
             );
 
+            // If router, verify all modular screens exist and compile
+            if tmpl == "router" {
+                for screen_file in [
+                    "HomeScreen.fsx",
+                    "DetailsScreen.fsx",
+                    "ProfileScreen.fsx",
+                    "Header.fsx",
+                ] {
+                    let path = tmp_dir.join("src").join(screen_file);
+                    assert!(
+                        path.exists(),
+                        "Router template must include modular screen '{}'",
+                        screen_file
+                    );
+                    let out = tmp_dir.join(format!("{}_out.rs", screen_file));
+                    let res = ferrix_compiler::compile_file(&path, &out);
+                    if let Err(e) = &res {
+                        eprintln!("ProfileScreen or other failed: {:?}", e);
+                    }
+                    assert!(
+                        res.is_ok(),
+                        "Compilation of {} failed: {:?}",
+                        screen_file,
+                        res.err()
+                    );
+                }
+            }
+
             // Verify Cargo.toml has [build-dependencies] ferrix-compiler
             let cargo_toml = fs::read_to_string(tmp_dir.join("Cargo.toml")).unwrap();
             assert!(
@@ -731,6 +949,52 @@ mod tests {
 
             let _ = fs::remove_dir_all(&tmp_dir);
         }
+    }
+
+    #[test]
+    fn test_multi_file_router_template_scaffolding_and_modules() {
+        let tmp_dir = std::env::temp_dir().join("ferrix_test_router_multi_file");
+        let _ = fs::remove_dir_all(&tmp_dir);
+        fs::create_dir_all(&tmp_dir).unwrap();
+
+        let args = NewArgs {
+            name: Some("test-router-app".to_string()),
+            template: Some("router".to_string()),
+            list: false,
+            router: false,
+            navigation: false,
+            storage: false,
+            sqlite: false,
+            tailwind: false,
+            i18n: false,
+        };
+
+        scaffold_project(&tmp_dir, "test-router-app", "router", &args).unwrap();
+
+        let src_dir = tmp_dir.join("src");
+        assert!(src_dir.join("component.fsx").exists());
+        assert!(src_dir.join("HomeScreen.fsx").exists());
+        assert!(src_dir.join("DetailsScreen.fsx").exists());
+        assert!(src_dir.join("ProfileScreen.fsx").exists());
+        assert!(src_dir.join("Header.fsx").exists());
+
+        // Verify Cargo.toml has router dependencies
+        let cargo_toml = fs::read_to_string(tmp_dir.join("Cargo.toml")).unwrap();
+        assert!(cargo_toml.contains("ferrix-router"));
+        assert!(cargo_toml.contains("ferrix-navigation"));
+        assert!(cargo_toml.contains("ferrix-compiler"));
+
+        // Verify lib.rs includes generated_modules
+        let lib_rs = fs::read_to_string(src_dir.join("lib.rs")).unwrap();
+        assert!(lib_rs.contains("generated_modules.rs"));
+        assert!(lib_rs.contains("pub use component::*;"));
+
+        // Verify build.rs contains compile_fsx_directory and to_snake_case
+        let build_rs = fs::read_to_string(tmp_dir.join("build.rs")).unwrap();
+        assert!(build_rs.contains("compile_fsx_directory"));
+        assert!(build_rs.contains("generated_modules.rs"));
+
+        let _ = fs::remove_dir_all(&tmp_dir);
     }
 
     #[test]

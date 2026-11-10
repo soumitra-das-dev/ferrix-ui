@@ -38,7 +38,13 @@ fn main() {
                         process::exit(1);
                     }
                 },
-                None => templates::prompt_template(),
+                None => {
+                    if args.router {
+                        "router".to_string()
+                    } else {
+                        templates::prompt_template()
+                    }
+                }
             };
 
             let target_dir = Path::new(&app_name);
