@@ -15,14 +15,30 @@ const FERRIX_REPO = "soumitra-das-dev/ferrix-ui";
 const VERSION = "0.1.0";
 
 function checkLocalBinary() {
+  const isWindows = os.platform() === "win32";
+  const binName = isWindows ? "ferrix.exe" : "ferrix";
+
+  // 1. Check ~/.cargo/bin (standard cargo install location)
+  const cargoBin = path.join(os.homedir(), ".cargo", "bin", binName);
+  if (fs.existsSync(cargoBin)) {
+    return cargoBin;
+  }
+
+  // 2. Check ~/.ferrix/bin
+  const ferrixBin = path.join(os.homedir(), ".ferrix", "bin", binName);
+  if (fs.existsSync(ferrixBin)) {
+    return ferrixBin;
+  }
+
+  // 3. Check system PATH
   try {
-    const isWindows = os.platform() === "win32";
     const cmd = isWindows ? "where ferrix" : "which ferrix";
     const out = execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
     if (out && fs.existsSync(out)) {
       return out;
     }
   } catch (_) {}
+
   return null;
 }
 
