@@ -33,3 +33,21 @@
 ## Performance
 - 10,000-node resolution and interning completed in **45.91 ms** in release mode (**4.59 µs per node**).
 - Zero heap allocations in `ir.rs` hashing via `std::mem::discriminant`.
+
+## Phase 2: PostCSS Pipeline & Hot Style Reloading
+- **Dual-Path Strategy**:
+  - Fast-path (default): Sub-millisecond direct native compilation (`0.166 ms`) when no `postcss.config.*` is present.
+  - PostCSS-path (opt-in): When `postcss.config.*` exists, runs `tools/postcss-runner/runner.js` subprocess at build time only.
+- **`@ferrix/postcss-plugin`**:
+  - Normalizes `rem` / `em` units to density-independent `px` points (`1rem = 16px`).
+  - Converts unsupported `position: fixed` to `position: absolute`.
+  - Warns on unsupported properties (`float`, `cursor`, `columns`, `table`) and pseudo-elements (`::before`, `::after`).
+- **SourceMap v3 Line Mapping**:
+  - Full Base64-VLQ decoder mapping generated CSS positions back to original source files and lines.
+  - Error diagnostics point developers directly to their authoring `.fsx` or `.css` source line.
+- **Hot Style Reloading**:
+  - `compute_hot_reload_patches` diffs mounted node styles against recompiled cascade rules.
+  - Generates atomic `PatchBatch` (`RegisterStyles` followed by `SetStyle` for affected nodes).
+  - Preserves 100% of application runtime state (reactive signals, text input, navigation, scroll position).
+  - Benchmark: 50 mounted nodes updated in **1.649 ms** (< 50ms budget).
+

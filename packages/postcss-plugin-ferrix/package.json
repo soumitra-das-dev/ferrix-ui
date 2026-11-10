@@ -1,0 +1,18 @@
+{
+  "name": "@ferrix/postcss-plugin",
+  "version": "0.1.0",
+  "description": "Official PostCSS plugin for the Ferrix native mobile styling pipeline",
+  "main": "index.js",
+  "keywords": [
+    "postcss",
+    "postcss-plugin",
+    "ferrix",
+    "react-native",
+    "mobile-styling"
+  ],
+  "author": "Ferrix Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "postcss": "^8.0.0"
+  }
+}

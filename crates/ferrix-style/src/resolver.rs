@@ -116,6 +116,32 @@ impl ReactiveStyleResolver {
         (style_id, reg_patch)
     }
 
+    /// Updates the declared `StyleIr` of an existing registered node (e.g. during Hot Style Reload).
+    /// Emits `Patch::SetStyle` only if the resolved style ID changed.
+    pub fn update_node_style(
+        &mut self,
+        node_id: NodeId,
+        new_style: StyleIr,
+    ) -> (u32, Option<Patch>) {
+        self.node_styles.insert(node_id, new_style);
+        let element_state = self.node_states.get(&node_id).copied().unwrap_or_default();
+        let resolved = self.resolve_effective_style(node_id, element_state);
+
+        let new_style_id = self.registry.intern(resolved);
+        let prev_style_id = self.applied_style_ids.insert(node_id, new_style_id);
+
+        let patch = if prev_style_id != Some(new_style_id) {
+            Some(Patch::SetStyle {
+                node_id,
+                style_id: new_style_id,
+            })
+        } else {
+            None
+        };
+
+        (new_style_id, patch)
+    }
+
     /// Unregisters a node when destroyed.
     pub fn unregister_node(&mut self, node_id: NodeId) {
         self.node_styles.remove(&node_id);

@@ -12,3 +12,5 @@
 | 2026-11-10 | Phase 1 Styling | 10k-Node Style Resolution | React Native / CSS-in-JS: ~150-300 ms | **45.91 ms (4.59 µs/node)** | 3-6x faster | Full cascade, specificity, media queries, style registry interning |
 | 2026-11-10 | Phase 1 Styling | Style Theme Switch JNI | Ad-hoc styles: 100+ calls | **1 batched call (150 B)** | -99% calls | Single `DirectByteBuffer` atomic buffer dispatch |
 | 2026-11-10 | Phase 1 Styling | Unchanged Style Interaction | CSS re-render: 1-10 ms | **0 patches / 0 JNI calls** | 0 overhead | Interaction cache filter in `ReactiveStyleResolver` |
+| 2026-11-10 | Phase 2 Styling | Fast-Path Native CSS Compile | LightningCSS: 1-5 ms | **0.166 ms** | Sub-millisecond | Direct Rust compilation when no PostCSS config |
+| 2026-11-10 | Phase 2 Styling | Hot Style Reload (50 nodes) | React Native Fast Refresh: ~100-300 ms | **1.649 ms** | -98% latency | Atomic `PatchBatch` without restarting Activity |

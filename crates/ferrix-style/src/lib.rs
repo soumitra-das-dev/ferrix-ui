@@ -6,6 +6,7 @@
 pub mod cascade;
 pub mod color;
 pub mod helpers;
+pub mod hot_reload;
 pub mod ir;
 pub mod registry;
 pub mod resolver;
@@ -13,6 +14,7 @@ pub mod resolver;
 pub use cascade::{CascadeEngine, CascadeRule, RuleSource, Specificity};
 pub use color::Color;
 pub use helpers::{cx, VariantConfig};
+pub use hot_reload::{compute_hot_reload_patches, HotReloadResult, MountedNodeInfo};
 pub use ir::StyleIr;
 pub use registry::StyleRegistry;
 pub use resolver::{

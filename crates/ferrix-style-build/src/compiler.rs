@@ -8,6 +8,7 @@ use ferrix_style::{CascadeRule, RuleSource};
 use crate::diagnostics::StyleDiagnostic;
 use crate::modules::scope_class_name;
 use crate::parser::CssParser;
+use crate::postcss::PostCssRunner;
 
 /// Output of a compiled CSS stylesheet.
 #[derive(Clone, Debug)]
@@ -86,5 +87,49 @@ impl StyleCompiler {
             variables,
             diagnostics: Vec::new(),
         })
+    }
+
+    /// Compiles CSS text with optional PostCSS preprocessing pipeline.
+    /// Fast-path: If `project_root` is None or has no PostCSS configuration,
+    /// PostCSS is skipped entirely and native compilation runs in sub-millisecond time.
+    pub fn compile_with_pipeline(
+        &self,
+        source: &str,
+        file_path: &Path,
+        project_root: Option<&Path>,
+    ) -> Result<CompiledStylesheet, Vec<StyleDiagnostic>> {
+        let config_opt = project_root.and_then(PostCssRunner::detect_config);
+
+        if let Some(config_path) = config_opt {
+            let (transformed_css, sourcemap, mut runner_diagnostics) =
+                PostCssRunner::run(&config_path, source, file_path)?;
+
+            let mut result = match self.compile(&transformed_css, file_path) {
+                Ok(res) => res,
+                Err(errs) => {
+                    // Map error diagnostics back using sourcemap if available
+                    let mapped_errs = errs
+                        .into_iter()
+                        .map(|mut diag| {
+                            if let Some(ref sm) = sourcemap {
+                                if let Some(orig) = sm.lookup(diag.line, diag.col) {
+                                    diag.file = orig.source;
+                                    diag.line = orig.line;
+                                    diag.col = orig.col;
+                                }
+                            }
+                            diag
+                        })
+                        .collect();
+                    return Err(mapped_errs);
+                }
+            };
+
+            result.diagnostics.append(&mut runner_diagnostics);
+            Ok(result)
+        } else {
+            // Fast-path: direct native compile
+            self.compile(source, file_path)
+        }
     }
 }
