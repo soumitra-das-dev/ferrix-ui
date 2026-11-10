@@ -20,17 +20,38 @@ fn main() {
 
     let result = match &cli.command {
         Commands::New(args) => {
-            let target_dir = Path::new(&args.name);
+            if args.list {
+                templates::print_templates();
+                return;
+            }
+
+            let app_name = match &args.name {
+                Some(name) if !name.trim().is_empty() => name.trim().to_string(),
+                _ => templates::prompt_app_name(),
+            };
+
+            let template_id = match &args.template {
+                Some(t) => match templates::resolve_template(t) {
+                    Ok(id) => id,
+                    Err(err) => {
+                        eprintln!("\n❌ Error: {}", err);
+                        process::exit(1);
+                    }
+                },
+                None => templates::prompt_template(),
+            };
+
+            let target_dir = Path::new(&app_name);
             println!(
                 "🚀 Scaffolding new Ferrix app '{}' using template '{}'...\n",
-                args.name, args.template
+                app_name, template_id
             );
 
-            match templates::scaffold_project(target_dir, args) {
+            match templates::scaffold_project(target_dir, &app_name, &template_id, args) {
                 Ok(()) => {
-                    println!("\n✨ Project '{}' created successfully!\n", args.name);
+                    println!("\n✨ Project '{}' created successfully!\n", app_name);
                     println!("Next steps:");
-                    println!("  cd {}", args.name);
+                    println!("  cd {}", app_name);
                     println!("  ferrix doctor       # Verify Android toolchain prerequisites");
                     println!("  ferrix dev          # Start local development loop");
                     println!("  ferrix run android  # Run on emulator or device");

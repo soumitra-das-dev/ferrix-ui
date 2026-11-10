@@ -13,7 +13,7 @@ export function App(): Element {
         <Switch value={enabled.value} onValueChange={(val) => enabled.set(val)} />
       </Row>
       <TextInput placeholder="Enter text here..." value={text.value} onChangeText={(t) => text.set(t)} />
-      <Button onClick={() => {}}>Action Button</Button>
+      <Button onClick={() => enabled.set(!enabled.value)}>Toggle Feature</Button>
     </Column>
   );
 }

@@ -10,4 +10,7 @@ crate-type = ["cdylib", "rlib"]
 ferrix-core = { version = "0.1" }
 ferrix-reactivity = { version = "0.1" }
 ferrix-renderer-protocol = { version = "0.1" }
+ferrix-network = { version = "0.1" }
 
+[build-dependencies]
+ferrix-compiler = { version = "0.1" }

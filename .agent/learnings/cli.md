@@ -48,3 +48,10 @@ The `ferrix` CLI serves as the primary developer experience entry point for Ferr
   ```
 - All starter templates under `templates/*/android/gradle.properties` include this configuration out-of-the-box.
 - Self-healing invariant: `ferrix run android`, `ferrix dev`, and `ferrix build` automatically execute `ensure_gradle_properties(android_dir)` before invoking Gradle tasks, safely patching missing or legacy project files on the fly.
+
+### 6. Template Discovery, Validation & Scaffolding Invariants
+- `ferrix new --list` / `-l`: Displays all 6 official starter templates (`hello-counter`, `blank`, `tabs`, `stack`, `api-client`, `kitchen-sink`) with detailed descriptions.
+- `ferrix new <name>` (interactive mode): Prompts developers with a numbered interactive template picker when `--template` is omitted in an interactive terminal.
+- Template name normalization: Resolves aliases case-insensitively (`counter` -> `hello-counter`, `tab` -> `tabs`, `api` -> `api-client`, `kitchen` -> `kitchen-sink`, `empty` -> `blank`).
+- Fail-fast validation: Any unrecognized template name triggers a descriptive error listing all available templates rather than silently creating an unintended template.
+- Compiler & build safety: Every template generates `[build-dependencies] ferrix-compiler = { version = "0.1" }` in `Cargo.toml` and valid `.fsx` component syntax verified by unit tests across all templates.

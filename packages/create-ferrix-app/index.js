@@ -136,7 +136,7 @@ async function main() {
   // Prepend 'new' if not provided
   let finalArgs = rawArgs;
   if (finalArgs.length === 0) {
-    finalArgs = ["new", "my-ferrix-app"];
+    finalArgs = ["new"];
   } else if (!["new", "create", "doctor", "dev", "run", "build", "check", "fmt", "test", "clean", "add", "prebuild", "--help", "-h", "--version", "-V"].includes(finalArgs[0])) {
     finalArgs = ["new", ...finalArgs];
   }

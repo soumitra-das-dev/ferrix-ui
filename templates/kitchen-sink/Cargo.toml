@@ -14,3 +14,5 @@ ferrix-storage = { version = "0.1" }
 ferrix-sqlite = { version = "0.1" }
 ferrix-i18n = { version = "0.1" }
 
+[build-dependencies]
+ferrix-compiler = { version = "0.1" }
