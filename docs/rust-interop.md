@@ -124,3 +124,4 @@ ferrix crates list
 ## 5. Panic Safety and Architecture A
 1. **No Boundary Panics**: Any functions called from `.fsx` execute on the Rust runtime thread. If an error occurs, the runtime error boundary traps unwinds (`catch_unwind`) and reports errors to the native Android logger or DevTools error overlay, preventing native crashes.
 2. **Deterministic Typing**: Types exposed across Rust and `.fsx` compile statically without reflection or JNI crossing overhead.
+

@@ -40,3 +40,4 @@
 - Full live smoke test on `emulator-5554`:
   - Golden sample app `examples/rust-interop/` containing `math.rs` + `uuid` + `regex` + `serde_json` + inline `rust { ... }`.
   - Built debug APK, installed via ADB, validated `ferrix:ready`, passed synthetic button click, verified hot-reload patch in 47.22s with zero errors.
+
