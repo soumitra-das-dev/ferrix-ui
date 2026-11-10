@@ -545,6 +545,9 @@ pub fn compile_native_cdylib(device: &DeviceInfo) -> Result<(), String> {
 }
 
 fn build_gradle_apk(android_dir: &Path) -> Result<(), String> {
+    // Auto-heal missing or incomplete gradle.properties
+    let _ = crate::templates::ensure_gradle_properties(android_dir);
+
     let gradlew_path = if cfg!(windows) {
         android_dir.join("gradlew.bat")
     } else {
