@@ -47,6 +47,10 @@ impl StyleDiagnostic {
             col,
         }
     }
+
+    pub fn is_error(&self) -> bool {
+        self.severity == DiagnosticSeverity::Error
+    }
 }
 
 impl fmt::Display for StyleDiagnostic {

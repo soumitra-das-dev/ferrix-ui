@@ -14,3 +14,5 @@
 | 2026-11-10 | Phase 1 Styling | Unchanged Style Interaction | CSS re-render: 1-10 ms | **0 patches / 0 JNI calls** | 0 overhead | Interaction cache filter in `ReactiveStyleResolver` |
 | 2026-11-10 | Phase 2 Styling | Fast-Path Native CSS Compile | LightningCSS: 1-5 ms | **0.166 ms** | Sub-millisecond | Direct Rust compilation when no PostCSS config |
 | 2026-11-10 | Phase 2 Styling | Hot Style Reload (50 nodes) | React Native Fast Refresh: ~100-300 ms | **1.649 ms** | -98% latency | Atomic `PatchBatch` without restarting Activity |
+| 2026-11-10 | Phase 3 Styling | Tailwind AOT Compilation (487 classes) | Webpack/Vite Tailwind: 200-800 ms | **8.5 ms** | ~50-100x faster | Ahead-of-time Rust compiler emitting native `CascadeRule`s |
+| 2026-11-10 | Phase 3 Styling | Tailwind Runtime APK CSS Overhead | NativeWind/Tailwind RN: ~1-3 MB / ~50ms parse | **0 bytes / 0 ms** | Zero APK runtime parse | Completely resolved AOT into binary integer style IDs |
