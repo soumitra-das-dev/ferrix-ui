@@ -40,3 +40,4 @@ export function StylingApp(props: StylingAppProps): Element {
         </Column>
     );
 }
+

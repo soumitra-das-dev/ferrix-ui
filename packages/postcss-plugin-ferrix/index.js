@@ -92,3 +92,4 @@ ferrixPostcssPlugin.processString = function(css, _opts = {}) {
 
 ferrixPostcssPlugin.postcss = true;
 module.exports = ferrixPostcssPlugin;
+
