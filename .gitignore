@@ -10,3 +10,5 @@ android/**/jniLibs/
 *.iml
 local.properties
 .ferrix/
+__pycache__/
+*.pyc
