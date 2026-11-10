@@ -61,3 +61,4 @@ Users attempting to create Ferrix projects with different templates experienced 
 - Reinstall CLI: `cargo install --path crates/ferrix-cli`
 - Test `ferrix new --list`, `ferrix new my-app --template tabs`, `ferrix new my-app --template stack`, etc.
 - Sync commits across `main` and `master`.
+

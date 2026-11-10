@@ -3,10 +3,12 @@ name = "ferrix-i18n"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "ICU-compatible internationalization, pluralization, and localization engine for Ferrix"
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { path = "../ferrix-reactivity" }
+ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

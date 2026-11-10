@@ -3,13 +3,15 @@ name = "ferrix-navigation"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "Native navigation containers (Stack, Tabs, Drawer) for Ferrix"
 authors.workspace = true
 
 [dependencies]
-ferrix-reactivity = { path = "../ferrix-reactivity" }
-ferrix-core = { path = "../ferrix-core" }
-ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
-ferrix-router = { path = "../ferrix-router" }
+ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
+ferrix-core = { version = "0.1.0", path = "../ferrix-core" }
+ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
+ferrix-router = { version = "0.1.0", path = "../ferrix-router" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -17,4 +19,3 @@ tracing.workspace = true
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-

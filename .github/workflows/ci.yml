@@ -5,6 +5,7 @@ on:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
+  workflow_dispatch:
 
 jobs:
   rust-verification:
@@ -61,3 +62,36 @@ jobs:
         run: |
           cd android
           ./gradlew testDebugUnitTest --no-daemon
+
+  publish-crates:
+    name: Auto-Publish to Crates.io
+    needs: [rust-verification, android-verification]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify Secret Presence
+        id: check-secret
+        env:
+          TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Neither CARGO_REGISTRY_TOKEN nor CRATES_IO_TOKEN secret found in repository settings. Set your crates.io token in GitHub Repo Settings > Secrets and variables > Actions to enable automatic publishing."
+          fi
+
+      - name: Publish Workspace Crates to Crates.io
+        if: steps.check-secret.outputs.has_token == 'true'
+        uses: katyo/publish-crates@v2
+        with:
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
+          ignore-unpublished-changes: true
+          publish-delay: 30000
+

@@ -3,10 +3,10 @@ name = "ferrix-layout"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Taffy-based layout engine for Ferrix"
 
 [dependencies]
 taffy = { workspace = true }
-ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
+ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
 thiserror = { workspace = true }
-
