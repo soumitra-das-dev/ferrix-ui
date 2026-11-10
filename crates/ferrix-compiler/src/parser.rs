@@ -99,6 +99,7 @@ impl<'a> Parser<'a> {
     pub fn parse_source_file(&mut self) -> Result<SourceFile, ParseError> {
         let mut imports = Vec::new();
         let mut types = Vec::new();
+        let mut inline_rust = Vec::new();
         let mut components = Vec::new();
 
         while self.current.kind != TokenKind::Eof {
@@ -109,12 +110,15 @@ impl<'a> Parser<'a> {
                 TokenKind::Type => {
                     types.push(self.parse_type_decl()?);
                 }
+                TokenKind::Rust => {
+                    inline_rust.push(self.parse_rust_block()?);
+                }
                 TokenKind::Export | TokenKind::Function => {
                     components.push(self.parse_component_decl()?);
                 }
                 _ => {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "top-level declaration (import, type, or function)",
+                        expected: "top-level declaration (import, type, rust block, or function)",
                         found: self.current.kind.clone(),
                         line: self.current.span.line,
                         col: self.current.span.col,
@@ -126,8 +130,25 @@ impl<'a> Parser<'a> {
         Ok(SourceFile {
             imports,
             types,
+            inline_rust,
             components,
         })
+    }
+
+    fn parse_rust_block(&mut self) -> Result<String, ParseError> {
+        self.expect(&TokenKind::Rust, "rust")?;
+        if self.current.kind != TokenKind::OpenBrace {
+            return Err(ParseError::UnexpectedToken {
+                expected: "{",
+                found: self.current.kind.clone(),
+                line: self.current.span.line,
+                col: self.current.span.col,
+            });
+        }
+
+        let rust_code = self.lexer.read_raw_rust_block().map_err(ParseError::Lex)?;
+        self.current = self.lexer.next_token()?;
+        Ok(rust_code)
     }
 
     // import { A, B } from "path";
@@ -607,6 +628,23 @@ impl<'a> Parser<'a> {
                     expr.span().col,
                 );
                 expr = Expr::Member(Box::new(expr), member, span);
+            } else if self.current.kind == TokenKind::ColonColon {
+                self.advance()?; // consume '::'
+                let (segment, s_span) = self.expect_ident()?;
+                let span = Span::new(
+                    expr.span().start,
+                    s_span.end,
+                    expr.span().line,
+                    expr.span().col,
+                );
+                expr = match expr {
+                    Expr::Path(mut segs, _) => {
+                        segs.push(segment);
+                        Expr::Path(segs, span)
+                    }
+                    Expr::Ident(id, _) => Expr::Path(vec![id, segment], span),
+                    _ => Expr::Path(vec![segment], span),
+                };
             } else if self.current.kind == TokenKind::OpenParen {
                 self.advance()?; // consume '('
                 let mut args = Vec::new();
@@ -642,6 +680,10 @@ impl<'a> Parser<'a> {
             TokenKind::Ident(id) => {
                 self.advance()?;
                 Ok(Expr::Ident(id, span))
+            }
+            TokenKind::Rust => {
+                self.advance()?;
+                Ok(Expr::Ident("rust".to_string(), span))
             }
             TokenKind::Int(i) => {
                 self.advance()?;

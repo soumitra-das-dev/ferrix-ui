@@ -11,6 +11,8 @@ pub enum LexError {
     UnterminatedString(usize, usize),
     #[error("Invalid number literal at line {0}, col {1}")]
     InvalidNumber(usize, usize),
+    #[error("Unterminated block starting at line {0}, col {1}")]
+    UnterminatedBlock(usize, usize),
 }
 
 pub struct Lexer<'a> {
@@ -31,6 +33,86 @@ impl<'a> Lexer<'a> {
             line: 1,
             col: 1,
         }
+    }
+
+    pub fn source(&self) -> &'a str {
+        self.source
+    }
+
+    pub fn read_raw_rust_block(&mut self) -> Result<String, LexError> {
+        let mut depth = 1;
+        let mut result = String::new();
+        let start_line = self.line;
+        let start_col = self.col;
+
+        while let Some(&(_, c)) = self.chars.get(self.cursor) {
+            self.advance();
+
+            if c == '/' {
+                if let Some(&(_, next_c)) = self.chars.get(self.cursor) {
+                    if next_c == '/' {
+                        // Line comment
+                        result.push(c);
+                        result.push(next_c);
+                        self.advance();
+                        while let Some(&(_, ch)) = self.chars.get(self.cursor) {
+                            result.push(ch);
+                            self.advance();
+                            if ch == '\n' {
+                                break;
+                            }
+                        }
+                        continue;
+                    } else if next_c == '*' {
+                        // Block comment
+                        result.push(c);
+                        result.push(next_c);
+                        self.advance();
+                        while let Some(&(_, ch)) = self.chars.get(self.cursor) {
+                            result.push(ch);
+                            self.advance();
+                            if ch == '*' {
+                                if let Some(&(_, end_c)) = self.chars.get(self.cursor) {
+                                    if end_c == '/' {
+                                        result.push(end_c);
+                                        self.advance();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        continue;
+                    }
+                }
+            } else if c == '"' {
+                // String literal
+                result.push(c);
+                let mut escaped = false;
+                while let Some(&(_, ch)) = self.chars.get(self.cursor) {
+                    result.push(ch);
+                    self.advance();
+                    if escaped {
+                        escaped = false;
+                    } else if ch == '\\' {
+                        escaped = true;
+                    } else if ch == '"' {
+                        break;
+                    }
+                }
+                continue;
+            } else if c == '{' {
+                depth += 1;
+            } else if c == '}' {
+                depth -= 1;
+                if depth == 0 {
+                    return Ok(result);
+                }
+            }
+
+            result.push(c);
+        }
+
+        Err(LexError::UnterminatedBlock(start_line, start_col))
     }
 
     fn peek(&self) -> Option<char> {
@@ -124,6 +206,7 @@ impl<'a> Lexer<'a> {
                 "let" => TokenKind::Let,
                 "true" => TokenKind::True,
                 "false" => TokenKind::False,
+                "rust" => TokenKind::Rust,
                 _ => TokenKind::Ident(ident),
             };
 
@@ -248,7 +331,14 @@ impl<'a> Lexer<'a> {
             ')' => TokenKind::CloseParen,
             '[' => TokenKind::OpenBracket,
             ']' => TokenKind::CloseBracket,
-            ':' => TokenKind::Colon,
+            ':' => {
+                if self.peek() == Some(':') {
+                    self.advance();
+                    TokenKind::ColonColon
+                } else {
+                    TokenKind::Colon
+                }
+            }
             ';' => TokenKind::Semi,
             ',' => TokenKind::Comma,
             '.' => TokenKind::Dot,

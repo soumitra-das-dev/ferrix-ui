@@ -203,6 +203,7 @@ schemes = ["{slug}"]
         r#"target/
 dist/
 *.so
+.ferrix/
 .env.local
 .env.*.local
 

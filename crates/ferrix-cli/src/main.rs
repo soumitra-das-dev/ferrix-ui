@@ -84,6 +84,19 @@ fn main() {
         Commands::Test(args) => commands::test::execute(args),
         Commands::Clean(args) => commands::clean::execute(args),
         Commands::Add(args) => commands::add::execute(args),
+        Commands::Remove(args) => {
+            if args.target.to_lowercase() == "crate" {
+                match args.name.as_deref() {
+                    Some(name) => commands::crate_cmd::remove_crate(name),
+                    None => {
+                        Err("Please specify crate name: ferrix remove crate <name>".to_string())
+                    }
+                }
+            } else {
+                commands::crate_cmd::remove_crate(&args.target)
+            }
+        }
+        Commands::Crates(_args) => commands::crate_cmd::list_crates(),
         Commands::Prebuild(args) => commands::prebuild::execute(args),
         Commands::Compile(args) => commands::compile::execute(args),
         Commands::Style(args) => commands::style::execute(args),

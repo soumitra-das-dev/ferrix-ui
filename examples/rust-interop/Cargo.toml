@@ -1,0 +1,21 @@
+[package]
+name = "rust-interop"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[lib]
+name = "rust_interop"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ferrix-ui-core = { version = "0.1" }
+ferrix-reactivity = { version = "0.1" }
+ferrix-renderer-protocol = { version = "0.1" }
+uuid = { version = "1.29.2", features = ["v4"] }
+regex = "1.13.1"
+serde_json = "1.0.154"
+
+[build-dependencies]
+ferrix-compiler = { version = "0.1" }

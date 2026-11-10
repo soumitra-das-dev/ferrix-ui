@@ -9,3 +9,4 @@ android/**/jniLibs/
 .idea/
 *.iml
 local.properties
+.ferrix/

@@ -32,6 +32,7 @@ pub enum TokenKind {
     Let,
     True,
     False,
+    Rust,
 
     // Identifiers & Literals
     Ident(String),
@@ -52,6 +53,7 @@ pub enum TokenKind {
     LessSlash,    // </
     SlashGreater, // />
     Colon,        // :
+    ColonColon,   // ::
     Semi,         // ;
     Comma,        // ,
     Dot,          // .

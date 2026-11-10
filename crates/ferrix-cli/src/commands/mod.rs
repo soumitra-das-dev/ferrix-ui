@@ -4,6 +4,7 @@ pub mod check;
 pub mod clean;
 pub mod compile;
 pub mod config;
+pub mod crate_cmd;
 pub mod deeplinks;
 pub mod dev;
 pub mod doctor;

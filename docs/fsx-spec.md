@@ -21,9 +21,10 @@ BooleanLiteral  ::= "true" | "false"
 
 ### 2.2 Top-Level Declarations
 ```ebnf
-SourceFile      ::= ImportDecl* (TypeDecl | ComponentDecl | FunctionDecl)*
+SourceFile      ::= ImportDecl* InlineRustBlock* (TypeDecl | ComponentDecl | FunctionDecl)*
 
 ImportDecl      ::= "import" "{" (Identifier ("," Identifier)*)? "}" "from" StringLiteral ";"
+InlineRustBlock ::= "rust" "{" RawRustCode "}"
 TypeDecl        ::= "type" TypeIdentifier "=" RecordType ";"
 RecordType      ::= "{" (Identifier ":" TypeRef ("," Identifier ":" TypeRef)*)? ","? "}"
 
@@ -35,6 +36,12 @@ OptionType      ::= "Option" "<" TypeRef ">" | TypeRef "?"
 ComponentDecl   ::= "export"? "function" TypeIdentifier "(" PropsParam? ")" ":" "Element" Block
 PropsParam      ::= Identifier ":" TypeRef
 ```
+
+### 2.2.1 Rust Interoperability & Imports
+- **Local Rust Modules**: `import { fib } from "./math.rs";` compiles to `#[path = "..."] pub mod math; pub use math::{fib};`.
+- **Cargo Crates**: `import { Uuid } from "rust:uuid";` compiles to `pub use uuid::{Uuid};`.
+- **Inline Rust Blocks**: `rust { ... }` blocks are injected verbatim into the generated Rust source file, allowing definitions of helper functions, custom structs, traits, and serialization routines.
+- **Path Calls**: Associated functions and enum variants can be called with `::` syntax (e.g. `Uuid::new_v4().to_string()`).
 
 ### 2.3 Statements & Expressions
 ```ebnf

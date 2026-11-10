@@ -6,6 +6,7 @@ use crate::token::Span;
 pub struct SourceFile {
     pub imports: Vec<ImportDecl>,
     pub types: Vec<TypeDecl>,
+    pub inline_rust: Vec<String>,
     pub components: Vec<ComponentDecl>,
 }
 
@@ -97,6 +98,7 @@ pub enum FsxChild {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
     Ident(String, Span),
+    Path(Vec<String>, Span),
     Int(i64, Span),
     Float(f64, Span),
     StringLit(String, Span),
@@ -125,6 +127,7 @@ impl Expr {
     pub fn span(&self) -> Span {
         match self {
             Self::Ident(_, s)
+            | Self::Path(_, s)
             | Self::Int(_, s)
             | Self::Float(_, s)
             | Self::StringLit(_, s)

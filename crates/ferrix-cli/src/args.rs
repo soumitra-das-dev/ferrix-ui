@@ -49,8 +49,14 @@ pub enum Commands {
     /// Clean build caches and generated Android artifacts
     Clean(CleanArgs),
 
-    /// Add a platform module or capability to the current project
+    /// Add a platform module or cargo crate to the current project
     Add(AddArgs),
+
+    /// Remove a cargo crate or platform module from the project
+    Remove(RemoveArgs),
+
+    /// List and inspect cargo crates in the project
+    Crates(CratesArgs),
 
     /// Materialize or synchronize the native Android Studio project
     Prebuild(PrebuildArgs),
@@ -298,8 +304,40 @@ pub struct CleanArgs {}
 
 #[derive(Args, Debug)]
 pub struct AddArgs {
-    /// Module name to add (e.g., camera, location, storage, sqlite, i18n, devtools)
-    pub module: String,
+    /// Target to add: 'crate' or module name (camera, location, storage, etc.)
+    pub target: String,
+
+    /// Crate name if target is 'crate'
+    pub name: Option<String>,
+
+    /// Features to enable when adding a crate
+    #[arg(long)]
+    pub features: Option<String>,
+
+    /// Disable default features when adding a crate
+    #[arg(long)]
+    pub no_default_features: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct RemoveArgs {
+    /// Target to remove: 'crate' or dependency name
+    pub target: String,
+
+    /// Crate name if target is 'crate'
+    pub name: Option<String>,
+}
+
+#[derive(Args, Debug)]
+pub struct CratesArgs {
+    #[command(subcommand)]
+    pub action: Option<CratesAction>,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum CratesAction {
+    /// List all installed cargo dependencies
+    List,
 }
 
 #[derive(Args, Debug)]

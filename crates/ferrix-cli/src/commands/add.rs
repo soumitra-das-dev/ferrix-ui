@@ -6,7 +6,18 @@ use std::path::Path;
 use crate::args::AddArgs;
 
 pub fn execute(args: &AddArgs) -> Result<(), String> {
-    let module = args.module.to_lowercase();
+    if args.target.to_lowercase() == "crate" {
+        let name = args.name.as_deref().ok_or_else(|| {
+            "Please specify crate name: ferrix add crate <name> [--features <f>]".to_string()
+        })?;
+        return crate::commands::crate_cmd::add_crate(
+            name,
+            args.features.as_deref(),
+            args.no_default_features,
+        );
+    }
+
+    let module = args.target.to_lowercase();
     println!("📦 Adding module '{}' to Ferrix project...\n", module);
 
     let cargo_path = Path::new("Cargo.toml");
