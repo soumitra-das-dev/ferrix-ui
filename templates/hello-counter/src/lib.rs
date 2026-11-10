@@ -1,5 +1,7 @@
 //! hello-counter - Built with Ferrix UI Framework
-pub mod component {
-    // Ahead-of-time compiled from src/component.fsx
-    include!(concat!(env!("OUT_DIR"), "/component_generated.rs"));
-}
+
+// Ahead-of-time compiled modules from all .fsx files in src/
+include!(concat!(env!("OUT_DIR"), "/generated_modules.rs"));
+
+// Re-export primary component for convenience
+pub use component::*;

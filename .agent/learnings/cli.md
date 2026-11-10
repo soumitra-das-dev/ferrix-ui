@@ -55,3 +55,21 @@ The `ferrix` CLI serves as the primary developer experience entry point for Ferr
 - Template name normalization: Resolves aliases case-insensitively (`counter` -> `hello-counter`, `tab` -> `tabs`, `api` -> `api-client`, `kitchen` -> `kitchen-sink`, `empty` -> `blank`).
 - Fail-fast validation: Any unrecognized template name triggers a descriptive error listing all available templates rather than silently creating an unintended template.
 - Compiler & build safety: Every template generates `[build-dependencies] ferrix-compiler = { version = "0.1" }` in `Cargo.toml` and valid `.fsx` component syntax verified by unit tests across all templates.
+
+### 7. Multi-File Project Architecture & Router Template
+- Real-world applications require modular multi-file architectures rather than confining all screens and UI logic to a single `component.fsx`.
+- **Dynamic AOT Auto-Discovery in `build.rs`**:
+  - The generated `build.rs` recursively walks `src/` to discover all `*.fsx` files.
+  - Automatically compiles each file into `$OUT_DIR/<stem>_generated.rs` and dynamically synthesizes `$OUT_DIR/generated_modules.rs`.
+  - Maps file paths to canonical Rust snake_case modules (e.g. `HomeScreen.fsx` -> `pub mod home_screen`, `DetailsScreen.fsx` -> `pub mod details_screen`).
+  - `src/lib.rs` includes `generated_modules.rs` and re-exports the primary component (`pub use component::*;`).
+  - Developers can add new `.fsx` files anywhere under `src/` without ever editing `build.rs` or `lib.rs`.
+- **Official `router` Template**:
+  - Added to `TEMPLATES` catalog with aliases: `router`, `routes`, `routing`, `route`.
+  - Scaffolds a multi-file architecture with:
+    - `src/component.fsx`: Root router / StackNavigator coordinator.
+    - `src/HomeScreen.fsx`: Home screen component.
+    - `src/DetailsScreen.fsx`: Details screen component.
+    - `src/ProfileScreen.fsx`: User profile screen with reactive switches.
+    - `src/Header.fsx`: Reusable header component.
+  - Automatically includes `ferrix-router` and `ferrix-navigation` in `Cargo.toml`.
