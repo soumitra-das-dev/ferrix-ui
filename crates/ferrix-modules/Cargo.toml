@@ -10,7 +10,7 @@ authors.workspace = true
 [dependencies]
 ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
 ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
-ferrix-core = { version = "0.1.0", path = "../ferrix-core" }
+ferrix-ui-core = { version = "0.1.0", path = "../ferrix-ui-core" }
 thiserror.workspace = true
 tracing.workspace = true
 bytes.workspace = true

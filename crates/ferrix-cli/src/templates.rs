@@ -201,7 +201,7 @@ android/local.properties
     // 4. Write Cargo.toml
     let mut cargo_deps = String::from(
         r#"[dependencies]
-ferrix-core = { version = "0.1" }
+ferrix-ui-core = { version = "0.1" }
 ferrix-reactivity = { version = "0.1" }
 ferrix-renderer-protocol = { version = "0.1" }
 "#,

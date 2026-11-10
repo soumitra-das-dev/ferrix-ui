@@ -199,9 +199,9 @@ name = "ferrix-android"
 version = "0.1.0"
 dependencies = [
  "ferrix-compiler",
- "ferrix-core",
  "ferrix-network",
  "ferrix-renderer-protocol",
+ "ferrix-ui-core",
  "jni",
  "serde",
  "serde_json",
@@ -213,9 +213,9 @@ name = "ferrix-benchmarks"
 version = "0.1.0"
 dependencies = [
  "ferrix-android",
- "ferrix-core",
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
+ "ferrix-ui-core",
 ]
 
 [[package]]
@@ -254,23 +254,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "ferrix-core"
-version = "0.1.0"
-dependencies = [
- "ferrix-layout",
- "ferrix-network",
- "ferrix-reactivity",
- "ferrix-renderer-protocol",
- "tracing",
-]
-
-[[package]]
 name = "ferrix-devtools"
 version = "0.1.0"
 dependencies = [
- "ferrix-core",
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
+ "ferrix-ui-core",
  "serde",
  "serde_json",
 ]
@@ -349,9 +338,9 @@ name = "ferrix-modules"
 version = "0.1.0"
 dependencies = [
  "bytes",
- "ferrix-core",
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
+ "ferrix-ui-core",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
@@ -361,10 +350,10 @@ dependencies = [
 name = "ferrix-navigation"
 version = "0.1.0"
 dependencies = [
- "ferrix-core",
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
  "ferrix-router",
+ "ferrix-ui-core",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -396,9 +385,9 @@ dependencies = [
 name = "ferrix-router"
 version = "0.1.0"
 dependencies = [
- "ferrix-core",
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
+ "ferrix-ui-core",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -476,10 +465,21 @@ dependencies = [
 name = "ferrix-test"
 version = "0.1.0"
 dependencies = [
- "ferrix-core",
  "ferrix-reactivity",
  "ferrix-renderer-protocol",
+ "ferrix-ui-core",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "ferrix-ui-core"
+version = "0.1.0"
+dependencies = [
+ "ferrix-layout",
+ "ferrix-network",
+ "ferrix-reactivity",
+ "ferrix-renderer-protocol",
+ "tracing",
 ]
 
 [[package]]

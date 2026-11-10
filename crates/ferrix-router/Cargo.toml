@@ -9,7 +9,7 @@ authors.workspace = true
 
 [dependencies]
 ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
-ferrix-core = { version = "0.1.0", path = "../ferrix-core" }
+ferrix-ui-core = { version = "0.1.0", path = "../ferrix-ui-core" }
 ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
 serde.workspace = true
 serde_json.workspace = true

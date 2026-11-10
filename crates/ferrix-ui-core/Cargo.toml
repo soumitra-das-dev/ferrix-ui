@@ -1,10 +1,13 @@
 [package]
-name = "ferrix-core"
+name = "ferrix-ui-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Components, hooks, lifecycle, and reconciliation for Ferrix"
+
+[lib]
+name = "ferrix_core"
 
 [dependencies]
 ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }

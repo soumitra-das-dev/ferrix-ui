@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 repository.workspace = true
 
 [dependencies]
-ferrix-core = { version = "0.1.0", path = "../ferrix-core" }
+ferrix-ui-core = { version = "0.1.0", path = "../ferrix-ui-core" }
 ferrix-renderer-protocol = { version = "0.1.0", path = "../ferrix-renderer-protocol" }
 ferrix-reactivity = { version = "0.1.0", path = "../ferrix-reactivity" }
 serde = { version = "1.0", features = ["derive"] }
