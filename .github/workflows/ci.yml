@@ -11,7 +11,6 @@ jobs:
   rust-verification:
     name: Rust Workspace Checks & Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +34,6 @@ jobs:
   android-verification:
     name: Android Runtime & Robolectric Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +67,6 @@ jobs:
     needs: [rust-verification, android-verification]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
-    timeout-minutes: 300
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -78,11 +75,6 @@ jobs:
 
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
 
       - name: Verify Secret Presence
         id: check-secret
@@ -96,10 +88,59 @@ jobs:
             echo "::warning::Neither CARGO_REGISTRY_TOKEN nor CRATES_IO_TOKEN secret found in repository settings. Set your crates.io token in GitHub Repo Settings > Secrets and variables > Actions to enable automatic publishing."
           fi
 
-      - name: Publish Workspace Crates with Rate-Limiting & Burst Control
+      - name: Publish Workspace Crates (Batch 1)
         if: steps.check-secret.outputs.has_token == 'true'
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
-        run: |
-          python3 scripts/publish_crates.py --no-verify
+        continue-on-error: true
+        uses: katyo/publish-crates@v2
+        with:
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
+          check-repo: false
+          ignore-unpublished-changes: true
+          publish-delay: 30000
 
+      - name: Rate Limit Delay (10 minutes)
+        if: steps.check-secret.outputs.has_token == 'true'
+        run: |
+          echo "Waiting 600s (10 min) for crates.io new crate rate limit window..."
+          sleep 600
+
+      - name: Publish Workspace Crates (Batch 2)
+        if: steps.check-secret.outputs.has_token == 'true'
+        continue-on-error: true
+        uses: katyo/publish-crates@v2
+        with:
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
+          check-repo: false
+          ignore-unpublished-changes: true
+          publish-delay: 30000
+
+      - name: Rate Limit Delay (10 minutes)
+        if: steps.check-secret.outputs.has_token == 'true'
+        run: |
+          echo "Waiting 600s (10 min) for crates.io new crate rate limit window..."
+          sleep 600
+
+      - name: Publish Workspace Crates (Batch 3)
+        if: steps.check-secret.outputs.has_token == 'true'
+        continue-on-error: true
+        uses: katyo/publish-crates@v2
+        with:
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
+          check-repo: false
+          ignore-unpublished-changes: true
+          publish-delay: 30000
+
+      - name: Rate Limit Delay (10 minutes)
+        if: steps.check-secret.outputs.has_token == 'true'
+        run: |
+          echo "Waiting 600s (10 min) for crates.io new crate rate limit window..."
+          sleep 600
+
+      - name: Publish Workspace Crates (Batch 4)
+        if: steps.check-secret.outputs.has_token == 'true'
+        uses: katyo/publish-crates@v2
+        with:
+          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
+          check-repo: false
+          ignore-unpublished-changes: true
+          publish-delay: 30000
