@@ -13,6 +13,9 @@ pub fn execute(args: &RunArgs) -> Result<(), String> {
         return Err("No android/ directory found. Run 'ferrix prebuild' first.".to_string());
     }
 
+    // Auto-heal missing or incomplete gradle.properties
+    let _ = crate::templates::ensure_gradle_properties(android_dir);
+
     // 1. Build and install via Gradle
     let task = if args.release {
         "installRelease"

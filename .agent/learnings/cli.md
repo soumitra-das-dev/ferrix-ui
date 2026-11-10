@@ -36,3 +36,15 @@ The `ferrix` CLI serves as the primary developer experience entry point for Ferr
 - `ferrix fmt`: Formats `.fsx` files in place or validates via `--check`.
 - `ferrix test`: Runs unit and headless component tests.
 - `ferrix add <module>`: Injects dependencies, updates AndroidManifest permissions, and prints sample snippets.
+
+### 5. AndroidX Configuration & Project Self-Healing
+- Android Gradle Plugin (AGP 8+) requires `android.useAndroidX=true` in `gradle.properties` when AndroidX libraries (`androidx.core`, `androidx.appcompat`, `com.google.android.material`) are included in dependencies.
+- Omitting `android.useAndroidX=true` triggers `Execution failed for task ':app:checkDebugAarMetadata'`.
+- Scaffolding engine (`scaffold_android_project`) guarantees generation of `android/gradle.properties` with:
+  ```properties
+  org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+  android.useAndroidX=true
+  android.nonTransitiveRClass=true
+  ```
+- All starter templates under `templates/*/android/gradle.properties` include this configuration out-of-the-box.
+- Self-healing invariant: `ferrix run android`, `ferrix dev`, and `ferrix build` automatically execute `ensure_gradle_properties(android_dir)` before invoking Gradle tasks, safely patching missing or legacy project files on the fly.

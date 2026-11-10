@@ -301,6 +301,34 @@ ferrix build --release --aab
     Ok(())
 }
 
+/// Ensures that `android/gradle.properties` exists and specifies `android.useAndroidX=true`.
+/// If the file does not exist, it is created. If it exists but lacks `android.useAndroidX`,
+/// the setting is appended.
+pub fn ensure_gradle_properties(android_dir: &Path) -> std::io::Result<()> {
+    let props_path = android_dir.join("gradle.properties");
+    if !props_path.exists() {
+        fs::write(
+            &props_path,
+            r#"# Ferrix Android Application Properties
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+android.nonTransitiveRClass=true
+"#,
+        )?;
+    } else {
+        let content = fs::read_to_string(&props_path)?;
+        if !content.contains("android.useAndroidX") {
+            let mut updated = content;
+            if !updated.ends_with('\n') {
+                updated.push('\n');
+            }
+            updated.push_str("android.useAndroidX=true\nandroid.nonTransitiveRClass=true\n");
+            fs::write(&props_path, updated)?;
+        }
+    }
+    Ok(())
+}
+
 /// Generates the standalone native Android Studio project inside `android/`.
 pub fn scaffold_android_project(
     project_dir: &Path,
@@ -318,6 +346,9 @@ pub fn scaffold_android_project(
 
     fs::create_dir_all(&java_pkg_dir)?;
     fs::create_dir_all(android_dir.join("gradle").join("wrapper"))?;
+
+    // android/gradle.properties
+    ensure_gradle_properties(&android_dir)?;
 
     // android/build.gradle.kts
     fs::write(
@@ -472,4 +503,57 @@ class MainActivity : Activity() {{
     fs::write(java_pkg_dir.join("MainActivity.kt"), main_activity)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ensure_gradle_properties_creates_file_if_missing() {
+        let tmp_dir = std::env::temp_dir().join("ferrix_test_ensure_gradle_props_new");
+        let _ = fs::remove_dir_all(&tmp_dir);
+        fs::create_dir_all(&tmp_dir).unwrap();
+
+        ensure_gradle_properties(&tmp_dir).unwrap();
+        let props = fs::read_to_string(tmp_dir.join("gradle.properties")).unwrap();
+        assert!(props.contains("android.useAndroidX=true"));
+        assert!(props.contains("android.nonTransitiveRClass=true"));
+
+        let _ = fs::remove_dir_all(&tmp_dir);
+    }
+
+    #[test]
+    fn test_ensure_gradle_properties_appends_if_missing_androidx() {
+        let tmp_dir = std::env::temp_dir().join("ferrix_test_ensure_gradle_props_append");
+        let _ = fs::remove_dir_all(&tmp_dir);
+        fs::create_dir_all(&tmp_dir).unwrap();
+
+        let props_file = tmp_dir.join("gradle.properties");
+        fs::write(&props_file, "org.gradle.jvmargs=-Xmx1024m\n").unwrap();
+
+        ensure_gradle_properties(&tmp_dir).unwrap();
+        let props = fs::read_to_string(&props_file).unwrap();
+        assert!(props.contains("org.gradle.jvmargs=-Xmx1024m"));
+        assert!(props.contains("android.useAndroidX=true"));
+        assert!(props.contains("android.nonTransitiveRClass=true"));
+
+        let _ = fs::remove_dir_all(&tmp_dir);
+    }
+
+    #[test]
+    fn test_scaffold_android_project_generates_gradle_properties() {
+        let tmp_dir = std::env::temp_dir().join("ferrix_test_scaffold_android");
+        let _ = fs::remove_dir_all(&tmp_dir);
+        fs::create_dir_all(&tmp_dir).unwrap();
+
+        scaffold_android_project(&tmp_dir, "my-app", "my_app").unwrap();
+        let props_file = tmp_dir.join("android").join("gradle.properties");
+        assert!(props_file.exists());
+        let props = fs::read_to_string(&props_file).unwrap();
+        assert!(props.contains("android.useAndroidX=true"));
+        assert!(props.contains("android.nonTransitiveRClass=true"));
+
+        let _ = fs::remove_dir_all(&tmp_dir);
+    }
 }
