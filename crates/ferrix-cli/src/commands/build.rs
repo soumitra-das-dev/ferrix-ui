@@ -15,6 +15,9 @@ pub fn execute(args: &BuildArgs) -> Result<(), String> {
         return Err("No android/ directory found. Run 'ferrix prebuild' first.".to_string());
     }
 
+    // Auto-heal missing or incomplete gradle.properties
+    let _ = crate::templates::ensure_gradle_properties(android_dir);
+
     // 1. Compile Rust native libraries using cargo-ndk
     let abi_target = match args.abi.as_str() {
         "x86_64" => "x86_64-linux-android",
