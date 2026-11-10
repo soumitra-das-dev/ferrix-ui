@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ferrix-renderer-protocol",
+    "crates/ferrix-reactivity",
+    "crates/ferrix-layout",
+    "crates/ferrix-core",
+    "crates/ferrix-compiler",
+    "crates/ferrix-network",
+    "crates/ferrix-modules",
+    "crates/ferrix-router",
+    "crates/ferrix-navigation",
+    "crates/ferrix-storage",
+    "crates/ferrix-sqlite",
+    "crates/ferrix-store",
+    "crates/ferrix-forms",
+    "crates/ferrix-config",
+    "crates/ferrix-i18n",
+    "crates/ferrix-fmt",
+    "crates/ferrix-lint",
+    "crates/ferrix-lsp",
+    "crates/ferrix-test",
+    "crates/ferrix-devtools",
+    "crates/ferrix-android",
+    "crates/ferrix-cli",
+    "crates/ferrix-style",
+    "crates/ferrix-style-build",
+    "benchmarks",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/soumitra-das-dev/ferrix-ui"
+authors = ["Ferrix Developers"]
+
+[workspace.dependencies]
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+bytes = "1.9"
+taffy = "0.7"
+jni = { version = "0.21", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

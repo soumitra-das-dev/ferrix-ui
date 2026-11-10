@@ -1,0 +1,14 @@
+[package]
+name = "ferrix-fmt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+ferrix-compiler = { path = "../ferrix-compiler" }
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }

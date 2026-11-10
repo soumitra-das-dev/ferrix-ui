@@ -1,0 +1,16 @@
+[package]
+name = "ferrix-style"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Native Style IR, Style Registry, Cascade Engine, and Reactive Style Resolver for Ferrix"
+
+[dependencies]
+ferrix-renderer-protocol = { path = "../ferrix-renderer-protocol" }
+ferrix-layout = { path = "../ferrix-layout" }
+taffy = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+

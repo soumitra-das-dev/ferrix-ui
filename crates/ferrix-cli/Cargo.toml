@@ -1,0 +1,21 @@
+[package]
+name = "ferrix-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Production developer toolchain and CLI for the Ferrix UI framework"
+
+[dependencies]
+ferrix-compiler = { path = "../ferrix-compiler" }
+ferrix-config = { path = "../ferrix-config" }
+ferrix-fmt = { path = "../ferrix-fmt" }
+ferrix-lint = { path = "../ferrix-lint" }
+clap = { version = "4.5", features = ["derive"] }
+walkdir = "2.5"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[[bin]]
+name = "ferrix"
+path = "src/main.rs"

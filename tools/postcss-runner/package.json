@@ -1,0 +1,20 @@
+{
+  "name": "@ferrix/postcss-runner",
+  "version": "0.1.0",
+  "description": "PostCSS subprocess runner for the Ferrix native styling pipeline",
+  "main": "runner.js",
+  "bin": {
+    "ferrix-postcss-runner": "runner.js"
+  },
+  "scripts": {
+    "test": "node runner.js --help"
+  },
+  "keywords": [
+    "ferrix",
+    "postcss",
+    "compiler"
+  ],
+  "author": "Ferrix Team",
+  "license": "MIT"
+}
+

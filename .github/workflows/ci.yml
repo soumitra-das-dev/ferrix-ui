@@ -1,0 +1,52 @@
+name: Ferrix CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  rust-verification:
+    name: Rust Workspace Checks & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: aarch64-linux-android, x86_64-linux-android
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check Formatting
+        run: cargo fmt --check
+
+      - name: Clippy Warnings Check
+        run: cargo clippy --workspace -- -D warnings
+
+      - name: Run All Workspace Tests
+        run: cargo test --workspace
+
+  android-verification:
+    name: Android Runtime & Robolectric Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Run Gradle Unit Tests
+        run: |
+          cd android
+          ./gradlew testDebugUnitTest --no-daemon

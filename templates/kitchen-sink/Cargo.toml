@@ -1,0 +1,16 @@
+[package]
+name = "kitchen-sink"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ferrix-core = { version = "0.1" }
+ferrix-reactivity = { version = "0.1" }
+ferrix-renderer-protocol = { version = "0.1" }
+ferrix-storage = { version = "0.1" }
+ferrix-sqlite = { version = "0.1" }
+ferrix-i18n = { version = "0.1" }
+

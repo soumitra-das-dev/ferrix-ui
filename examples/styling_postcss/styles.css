@@ -1,0 +1,19 @@
+/* Ferrix PostCSS sample styles */
+:root {
+  --theme-color: #3b82f6;
+  --theme-bg: #f8fafc;
+}
+
+.hero {
+  padding: 1.5rem; /* converted to 24px by @ferrix/postcss-plugin */
+  margin: 1rem;    /* converted to 16px */
+  background-color: var(--theme-bg);
+  border-radius: 0.5rem; /* converted to 8px */
+}
+
+.heroTitle {
+  font-size: 2rem; /* converted to 32px */
+  color: var(--theme-color);
+  font-weight: 700;
+}
+

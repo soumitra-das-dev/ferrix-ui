@@ -1,0 +1,15 @@
+# Ferrix Application Configuration
+name = "tabs"
+slug = "tabs"
+version = "0.1.0"
+
+[android]
+package = "com.example.tabs"
+version_code = 1
+min_sdk = 26
+target_sdk = 34
+compile_sdk = 34
+scheme = "tabs"
+
+[build]
+output_dir = "dist"

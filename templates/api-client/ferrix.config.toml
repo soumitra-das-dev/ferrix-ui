@@ -1,0 +1,15 @@
+# Ferrix Application Configuration
+name = "api-client"
+slug = "api-client"
+version = "0.1.0"
+
+[android]
+package = "com.example.api_client"
+version_code = 1
+min_sdk = 26
+target_sdk = 34
+compile_sdk = 34
+scheme = "api-client"
+
+[build]
+output_dir = "dist"

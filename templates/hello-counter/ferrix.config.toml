@@ -1,0 +1,15 @@
+# Ferrix Application Configuration
+name = "hello-counter"
+slug = "hello-counter"
+version = "0.1.0"
+
+[android]
+package = "com.example.hello_counter"
+version_code = 1
+min_sdk = 26
+target_sdk = 34
+compile_sdk = 34
+scheme = "hello-counter"
+
+[build]
+output_dir = "dist"

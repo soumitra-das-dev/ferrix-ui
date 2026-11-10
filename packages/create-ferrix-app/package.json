@@ -1,0 +1,29 @@
+{
+  "name": "create-ferrix-app",
+  "version": "0.1.0",
+  "description": "Scaffold a new ahead-of-time compiled Android app with Ferrix UI",
+  "bin": {
+    "create-ferrix-app": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "ferrix",
+    "android",
+    "rust",
+    "ui",
+    "mobile",
+    "scaffold",
+    "cli"
+  ],
+  "author": "Soumitra Das <https://github.com/soumitra-das-dev>",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soumitra-das-dev/ferrix-ui.git"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

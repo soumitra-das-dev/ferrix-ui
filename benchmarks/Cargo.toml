@@ -1,0 +1,17 @@
+[package]
+name = "ferrix-benchmarks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "ferrix-benchmarks"
+path = "src/main.rs"
+
+[dependencies]
+ferrix-renderer-protocol = { path = "../crates/ferrix-renderer-protocol" }
+ferrix-reactivity = { path = "../crates/ferrix-reactivity" }
+ferrix-core = { path = "../crates/ferrix-core" }
+ferrix-android = { path = "../crates/ferrix-android" }
+
