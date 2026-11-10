@@ -58,11 +58,15 @@ pub enum Commands {
 #[derive(Args, Debug)]
 pub struct NewArgs {
     /// Name of the new application/directory
-    pub name: String,
+    pub name: Option<String>,
 
     /// Starter template: blank, hello-counter, tabs, stack, api-client, kitchen-sink
-    #[arg(short, long, default_value = "hello-counter")]
-    pub template: String,
+    #[arg(short, long)]
+    pub template: Option<String>,
+
+    /// List all available starter templates
+    #[arg(short, long)]
+    pub list: bool,
 
     /// Include file-based router (F1)
     #[arg(long)]

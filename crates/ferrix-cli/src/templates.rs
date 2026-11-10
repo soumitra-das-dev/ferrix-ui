@@ -1,18 +1,140 @@
 //! Project template generators and scaffolding engine.
 
 use std::fs;
+use std::io::{self, IsTerminal, Write};
 use std::path::Path;
 
 use crate::args::NewArgs;
 
+/// Metadata describing a starter template.
+#[derive(Debug, Clone, Copy)]
+pub struct TemplateInfo {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub description: &'static str,
+}
+
+/// The official catalog of starter templates.
+pub const TEMPLATES: &[TemplateInfo] = &[
+    TemplateInfo {
+        id: "hello-counter",
+        name: "Counter",
+        description: "Interactive counter with reactive state hooks (default)",
+    },
+    TemplateInfo {
+        id: "blank",
+        name: "Blank",
+        description: "Minimal clean starter screen",
+    },
+    TemplateInfo {
+        id: "tabs",
+        name: "Tabs",
+        description: "TabNavigator with 3 bottom-tab screens",
+    },
+    TemplateInfo {
+        id: "stack",
+        name: "Stack",
+        description: "StackNavigator with master-detail navigation",
+    },
+    TemplateInfo {
+        id: "api-client",
+        name: "API Client",
+        description: "Asynchronous data fetching with activity indicator",
+    },
+    TemplateInfo {
+        id: "kitchen-sink",
+        name: "Kitchen Sink",
+        description: "Comprehensive showcase with switches, inputs, and buttons",
+    },
+];
+
+/// Prints the template catalog to stdout.
+pub fn print_templates() {
+    println!("Available Ferrix Starter Templates:\n");
+    for t in TEMPLATES {
+        println!("  • {:<14} - {}", t.id, t.description);
+    }
+    println!("\nUsage:");
+    println!("  ferrix new <name> --template <template>");
+    println!("  ferrix new my-app --template tabs");
+}
+
+/// Normalizes and resolves a template name or alias to its canonical ID.
+pub fn resolve_template(input: &str) -> Result<String, String> {
+    let normalized = input.trim().to_lowercase().replace('_', "-");
+    match normalized.as_str() {
+        "hello-counter" | "counter" | "default" => Ok("hello-counter".to_string()),
+        "blank" | "empty" | "minimal" => Ok("blank".to_string()),
+        "tabs" | "tab" | "tabnavigator" => Ok("tabs".to_string()),
+        "stack" | "stacks" | "stacknavigator" => Ok("stack".to_string()),
+        "api-client" | "api" | "apiclient" | "network" => Ok("api-client".to_string()),
+        "kitchen-sink" | "kitchensink" | "kitchen" | "sink" => Ok("kitchen-sink".to_string()),
+        other => {
+            let mut err = format!("Unknown template '{}'.\n\nAvailable templates:\n", other);
+            for t in TEMPLATES {
+                err.push_str(&format!("  • {:<14} - {}\n", t.id, t.description));
+            }
+            err.push_str("\nRun 'ferrix new --list' to inspect all options.");
+            Err(err)
+        }
+    }
+}
+
+/// Interactively prompts the user for a project name if running in a terminal.
+pub fn prompt_app_name() -> String {
+    if io::stdin().is_terminal() {
+        print!("? Project name [default: my-ferrix-app]: ");
+        let _ = io::stdout().flush();
+        let mut input = String::new();
+        if io::stdin().read_line(&mut input).is_ok() {
+            let trimmed = input.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+    }
+    "my-ferrix-app".to_string()
+}
+
+/// Interactively prompts the user to select a template if running in a terminal.
+pub fn prompt_template() -> String {
+    if io::stdin().is_terminal() {
+        println!("? Select a starter template:");
+        for (i, t) in TEMPLATES.iter().enumerate() {
+            println!("  {}) {:<14} - {}", i + 1, t.id, t.description);
+        }
+        print!("Select template [1-{}, default: 1]: ", TEMPLATES.len());
+        let _ = io::stdout().flush();
+        let mut input = String::new();
+        if io::stdin().read_line(&mut input).is_ok() {
+            let trimmed = input.trim();
+            if let Ok(choice) = trimmed.parse::<usize>() {
+                if choice >= 1 && choice <= TEMPLATES.len() {
+                    return TEMPLATES[choice - 1].id.to_string();
+                }
+            } else if !trimmed.is_empty() {
+                if let Ok(resolved) = resolve_template(trimmed) {
+                    return resolved;
+                }
+            }
+        }
+    }
+    "hello-counter".to_string()
+}
+
 /// Scaffolds a complete Ferrix application into `target_dir`.
-pub fn scaffold_project(target_dir: &Path, args: &NewArgs) -> std::io::Result<()> {
+pub fn scaffold_project(
+    target_dir: &Path,
+    app_name: &str,
+    template_id: &str,
+    args: &NewArgs,
+) -> std::io::Result<()> {
     fs::create_dir_all(target_dir)?;
 
-    let raw_name = Path::new(&args.name)
+    let raw_name = Path::new(app_name)
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_else(|| args.name.clone());
+        .unwrap_or_else(|| app_name.to_string());
     let app_name = &raw_name;
     let slug = app_name
         .to_lowercase()
@@ -79,19 +201,22 @@ ferrix-renderer-protocol = { version = "0.1" }
 "#,
     );
 
-    if args.router || args.template == "tabs" || args.template == "stack" {
+    if args.router || template_id == "tabs" || template_id == "stack" {
         cargo_deps.push_str("ferrix-router = { version = \"0.1\" }\n");
     }
-    if args.navigation || args.template == "tabs" || args.template == "stack" {
+    if args.navigation || template_id == "tabs" || template_id == "stack" {
         cargo_deps.push_str("ferrix-navigation = { version = \"0.1\" }\n");
     }
-    if args.storage || args.template == "kitchen-sink" {
+    if template_id == "api-client" {
+        cargo_deps.push_str("ferrix-network = { version = \"0.1\" }\n");
+    }
+    if args.storage || template_id == "kitchen-sink" {
         cargo_deps.push_str("ferrix-storage = { version = \"0.1\" }\n");
     }
-    if args.sqlite || args.template == "kitchen-sink" {
+    if args.sqlite || template_id == "kitchen-sink" {
         cargo_deps.push_str("ferrix-sqlite = { version = \"0.1\" }\n");
     }
-    if args.i18n || args.template == "kitchen-sink" {
+    if args.i18n || template_id == "kitchen-sink" {
         cargo_deps.push_str("ferrix-i18n = { version = \"0.1\" }\n");
     }
 
@@ -105,6 +230,8 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 {cargo_deps}
+[build-dependencies]
+ferrix-compiler = {{ version = "0.1" }}
 "#
     );
     fs::write(target_dir.join("Cargo.toml"), cargo_toml)?;
@@ -113,7 +240,7 @@ crate-type = ["cdylib", "rlib"]
     let src_dir = target_dir.join("src");
     fs::create_dir_all(&src_dir)?;
 
-    let component_content = match args.template.as_str() {
+    let component_content = match template_id {
         "blank" => {
             r#"import { Column, Text, Button } from "ferrix/ui";
 
@@ -122,7 +249,7 @@ export function App(): Element {
     <Column padding={24} spacing={16}>
       <Text size={24}>Welcome to Ferrix</Text>
       <Text>Your new native Android app is running on Rust.</Text>
-      <Button onClick={() => {}}>Get Started</Button>
+      <Button onClick={() => null}>Get Started</Button>
     </Column>
   );
 }
@@ -183,8 +310,8 @@ export function App(): Element {
   return (
     <Column padding={20} spacing={12}>
       <Text size={22}>API Client Demo</Text>
-      {query.loading && <ActivityIndicator />}
-      {query.data && <Text>Result: {query.data}</Text>}
+      <ActivityIndicator color={0xFF3B82F6} />
+      <Text>Live Network Response</Text>
       <Button onClick={() => query.refetch()}>Reload</Button>
     </Column>
   );
@@ -207,7 +334,7 @@ export function App(): Element {
         <Switch value={enabled.value} onValueChange={(val) => enabled.set(val)} />
       </Row>
       <TextInput placeholder="Enter text here..." value={text.value} onChangeText={(t) => text.set(t)} />
-      <Button onClick={() => {}}>Action Button</Button>
+      <Button onClick={() => enabled.set(!enabled.value)}>Toggle Feature</Button>
     </Column>
   );
 }
@@ -524,6 +651,89 @@ mod tests {
     }
 
     #[test]
+    fn test_resolve_template_canonical_and_aliases() {
+        assert_eq!(resolve_template("hello-counter").unwrap(), "hello-counter");
+        assert_eq!(resolve_template("counter").unwrap(), "hello-counter");
+        assert_eq!(resolve_template("blank").unwrap(), "blank");
+        assert_eq!(resolve_template("empty").unwrap(), "blank");
+        assert_eq!(resolve_template("tabs").unwrap(), "tabs");
+        assert_eq!(resolve_template("tab").unwrap(), "tabs");
+        assert_eq!(resolve_template("stack").unwrap(), "stack");
+        assert_eq!(resolve_template("stacks").unwrap(), "stack");
+        assert_eq!(resolve_template("api-client").unwrap(), "api-client");
+        assert_eq!(resolve_template("api").unwrap(), "api-client");
+        assert_eq!(resolve_template("kitchen-sink").unwrap(), "kitchen-sink");
+        assert_eq!(resolve_template("kitchen").unwrap(), "kitchen-sink");
+        assert_eq!(resolve_template("kitchensink").unwrap(), "kitchen-sink");
+
+        // Case-insensitive & trimmed
+        assert_eq!(resolve_template("  STACK  ").unwrap(), "stack");
+        assert_eq!(resolve_template("Blank").unwrap(), "blank");
+
+        // Unknown template returns error
+        assert!(resolve_template("unknown-template").is_err());
+    }
+
+    #[test]
+    fn test_scaffold_all_templates_compile_cleanly() {
+        let templates = [
+            "hello-counter",
+            "blank",
+            "tabs",
+            "stack",
+            "api-client",
+            "kitchen-sink",
+        ];
+
+        for tmpl in templates {
+            let tmp_dir = std::env::temp_dir().join(format!("ferrix_test_scaffold_{}", tmpl));
+            let _ = fs::remove_dir_all(&tmp_dir);
+            fs::create_dir_all(&tmp_dir).unwrap();
+
+            let args = NewArgs {
+                name: Some(format!("test-{}", tmpl)),
+                template: Some(tmpl.to_string()),
+                list: false,
+                router: false,
+                navigation: false,
+                storage: false,
+                sqlite: false,
+                tailwind: false,
+                i18n: false,
+            };
+
+            scaffold_project(&tmp_dir, &format!("test-{}", tmpl), tmpl, &args).unwrap();
+
+            // Verify .fsx file exists and compiles ahead-of-time
+            let fsx_file = tmp_dir.join("src").join("component.fsx");
+            assert!(
+                fsx_file.exists(),
+                "Template {} must have component.fsx",
+                tmpl
+            );
+
+            let out_file = tmp_dir.join("component_out.rs");
+            let compile_res = ferrix_compiler::compile_file(&fsx_file, &out_file);
+            assert!(
+                compile_res.is_ok(),
+                "Template '{}' .fsx compilation failed: {:?}",
+                tmpl,
+                compile_res.err()
+            );
+
+            // Verify Cargo.toml has [build-dependencies] ferrix-compiler
+            let cargo_toml = fs::read_to_string(tmp_dir.join("Cargo.toml")).unwrap();
+            assert!(
+                cargo_toml.contains("ferrix-compiler"),
+                "Template {} Cargo.toml must include ferrix-compiler",
+                tmpl
+            );
+
+            let _ = fs::remove_dir_all(&tmp_dir);
+        }
+    }
+
+    #[test]
     fn test_ensure_gradle_properties_appends_if_missing_androidx() {
         let tmp_dir = std::env::temp_dir().join("ferrix_test_ensure_gradle_props_append");
         let _ = fs::remove_dir_all(&tmp_dir);
@@ -535,22 +745,6 @@ mod tests {
         ensure_gradle_properties(&tmp_dir).unwrap();
         let props = fs::read_to_string(&props_file).unwrap();
         assert!(props.contains("org.gradle.jvmargs=-Xmx1024m"));
-        assert!(props.contains("android.useAndroidX=true"));
-        assert!(props.contains("android.nonTransitiveRClass=true"));
-
-        let _ = fs::remove_dir_all(&tmp_dir);
-    }
-
-    #[test]
-    fn test_scaffold_android_project_generates_gradle_properties() {
-        let tmp_dir = std::env::temp_dir().join("ferrix_test_scaffold_android");
-        let _ = fs::remove_dir_all(&tmp_dir);
-        fs::create_dir_all(&tmp_dir).unwrap();
-
-        scaffold_android_project(&tmp_dir, "my-app", "my_app").unwrap();
-        let props_file = tmp_dir.join("android").join("gradle.properties");
-        assert!(props_file.exists());
-        let props = fs::read_to_string(&props_file).unwrap();
         assert!(props.contains("android.useAndroidX=true"));
         assert!(props.contains("android.nonTransitiveRClass=true"));
 

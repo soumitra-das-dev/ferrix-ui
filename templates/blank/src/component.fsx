@@ -5,7 +5,7 @@ export function App(): Element {
     <Column padding={24} spacing={16}>
       <Text size={24}>Welcome to Ferrix</Text>
       <Text>Your new native Android app is running on Rust.</Text>
-      <Button onClick={() => {}}>Get Started</Button>
+      <Button onClick={() => null}>Get Started</Button>
     </Column>
   );
 }

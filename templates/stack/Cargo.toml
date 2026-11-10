@@ -13,3 +13,5 @@ ferrix-renderer-protocol = { version = "0.1" }
 ferrix-router = { version = "0.1" }
 ferrix-navigation = { version = "0.1" }
 
+[build-dependencies]
+ferrix-compiler = { version = "0.1" }

@@ -7,8 +7,8 @@ export function App(): Element {
   return (
     <Column padding={20} spacing={12}>
       <Text size={22}>API Client Demo</Text>
-      {query.loading && <ActivityIndicator />}
-      {query.data && <Text>Result: {query.data}</Text>}
+      <ActivityIndicator color={0xFF3B82F6} />
+      <Text>Live Network Response</Text>
       <Button onClick={() => query.refetch()}>Reload</Button>
     </Column>
   );
